@@ -8,6 +8,7 @@ import com.sciencefair.util.ScienceFairCsvUtil;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -26,9 +27,8 @@ public class ScienceFairAssignmentGui extends JFrame {
     private JTextField projectsFileField;
     private JTextField outputFileField;
     private JButton runButton;
-    private JButton openCsvButton;
     private JButton openHtmlButton;
-    private JTextArea resultArea;
+    private JTextPane resultArea;
     private ScienceFairAssignmentService assignmentService;
     
     public ScienceFairAssignmentGui() {
@@ -62,16 +62,29 @@ public class ScienceFairAssignmentGui extends JFrame {
         openFolderButton.setEnabled(false);
     runButton = new JButton("Assign Projects to Table Slots");
     runButton.setBackground(new Color(220, 240, 255)); // Light blue background
-    openCsvButton = new JButton("Open Output .csv");
     openHtmlButton = new JButton("Open Table Layout");
-    openCsvButton.setEnabled(false);
     openHtmlButton.setEnabled(false);
-    resultArea = new JTextArea(18, 60);
+    resultArea = new JTextPane();
     resultArea.setEditable(false);
     resultArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-    resultArea.setText("Please select your Table Slots and Projects CSV files to begin.\n");
+    setStyledText("Please select your Table Slots and Projects CSV files to begin.\n", Color.WHITE);
     }
     
+    private void appendColoredText(String text, Color color) {
+        StyledDocument doc = resultArea.getStyledDocument();
+        SimpleAttributeSet attributes = new SimpleAttributeSet();
+        StyleConstants.setForeground(attributes, color);
+        try {
+            doc.insertString(doc.getLength(), text, attributes);
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void setStyledText(String text, Color color) {
+        resultArea.setText("");
+        appendColoredText(text, color);
+    }
     
     private void setupLayout() {
         setLayout(new BorderLayout());
@@ -109,7 +122,6 @@ public class ScienceFairAssignmentGui extends JFrame {
         
     // Button row: all buttons aligned to the far right
     JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-    buttonPanel.add(openCsvButton);
     buttonPanel.add(openHtmlButton);
     buttonPanel.add(openFolderButton);
     buttonPanel.add(runButton);
@@ -142,7 +154,6 @@ public class ScienceFairAssignmentGui extends JFrame {
                 runAssignment();
             }
         });
-        openCsvButton.addActionListener(e -> openFile(outputFileField.getText().trim() + File.separator + "output.csv"));
         openHtmlButton.addActionListener(e -> openFile(outputFileField.getText().trim() + File.separator + "output.html"));
         openFolderButton.addActionListener(e -> {
             if (outputFolder != null) {
@@ -170,7 +181,6 @@ public class ScienceFairAssignmentGui extends JFrame {
         boolean validProjects = isValidProjectsFile(projectsFileField.getText().trim());
         boolean enable = validTables && validProjects;
         runButton.setEnabled(enable);
-        openCsvButton.setEnabled(false);
         openHtmlButton.setEnabled(false);
         openFolderButton.setEnabled(false);
 
@@ -194,7 +204,8 @@ public class ScienceFairAssignmentGui extends JFrame {
         if (enable) {
             log.append("Both files are valid. Click 'Assign Projects to Table Slots' to continue.\n");
         }
-        resultArea.setText(log.toString());
+        
+        setStyledText(log.toString(), Color.WHITE);
     }
 
     // Check if table slots file has required headers
@@ -291,9 +302,8 @@ public class ScienceFairAssignmentGui extends JFrame {
         
     // Disable buttons during processing
     runButton.setEnabled(false);
-    openCsvButton.setEnabled(false);
     openHtmlButton.setEnabled(false);
-    resultArea.setText("Processing assignment...\n");
+    setStyledText("Processing assignment...\n", Color.WHITE);
         
         // Run assignment in background thread
         SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
@@ -334,7 +344,11 @@ public class ScienceFairAssignmentGui extends JFrame {
             @Override
             protected void process(List<String> chunks) {
                 for (String message : chunks) {
-                    resultArea.append(message + "\n");
+                    if (message.contains("Assignment completed successfully!")) {
+                        appendColoredText(message + "\n", Color.GREEN.brighter());
+                    } else {
+                        appendColoredText(message + "\n", Color.WHITE);
+                    }
                 }
                 resultArea.setCaretPosition(resultArea.getDocument().getLength());
             }
@@ -342,7 +356,6 @@ public class ScienceFairAssignmentGui extends JFrame {
             @Override
             protected void done() {
                 runButton.setEnabled(true);
-                openCsvButton.setEnabled(true);
                 openHtmlButton.setEnabled(true);
                     openFolderButton.setEnabled(true);
             }
