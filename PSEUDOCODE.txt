@@ -1,0 +1,413 @@
+# Science Fair Table Assignment Application - Pseudocode
+
+## Overview
+This document describes the pseudocode for a Java-based application that assigns science fair projects to table slots based on CSV input files and specific assignment rules.
+
+## Main Application Flow
+
+```
+MAIN PROGRAM:
+    IF command line arguments is empty THEN
+        Launch GUI mode
+    ELSE IF command line arguments count equals 3 THEN
+        Run command line mode with (tableSlots file, projects file, output file)
+    ELSE IF first argument equals "--debug" THEN
+        Run debug mode to examine data
+    ELSE
+        Print usage instructions
+    END IF
+END MAIN
+```
+
+## Command Line Mode Pseudocode
+
+```
+FUNCTION runCommandLine(tableSlotsFile, projectsFile, outputFile):
+    Print "Science Fair Table Assignment - Command Line Mode"
+    
+    // Validate input files exist
+    IF tableSlotsFile does not exist THEN
+        Print error and exit
+    END IF
+    
+    IF projectsFile does not exist THEN
+        Print error and exit
+    END IF
+    
+    TRY:
+        // Load data from CSV files
+        tableSlots = readTableSlotsFromCSV(tableSlotsFile)
+        Print "Loaded {count} table slots"
+        
+        projects = readProjectsFromCSV(projectsFile)
+        Print "Loaded {count} projects"
+        
+        // Run assignment algorithm
+        Print "Running assignment algorithm..."
+        assignments = assignProjectsToSlots(projects, tableSlots)
+        
+        // Save results
+        Print "Saving results to: {outputFile}"
+        writeAssignmentsToCSV(assignments, outputFile)
+        
+        // Generate and print summary
+        summary = generateAssignmentSummary(assignments, projects, tableSlots)
+        Print summary
+        
+        Print "Assignment completed successfully!"
+        
+    CATCH any exception:
+        Print error message and stack trace
+        Exit with error code
+    END TRY
+END FUNCTION
+```
+
+## CSV Reading Pseudocode
+
+### Table Slots CSV Reader
+```
+FUNCTION readTableSlotsFromCSV(filePath):
+    tableSlots = empty list
+    
+    OPEN CSV file with headers: Row, rowNumSlots, tableSlotID, isReserved
+    
+    FOR each record in CSV:
+        slot = new TableSlot()
+        slot.row = parse integer from "Row" column
+        slot.rowNumSlots = parse integer from "rowNumSlots" column
+        slot.tableSlotID = parse integer from "tableSlotID" column
+        slot.isReserved = parse boolean from "isReserved" column
+        
+        ADD slot to tableSlots list
+    END FOR
+    
+    CLOSE CSV file
+    RETURN tableSlots
+END FUNCTION
+```
+
+### Projects CSV Reader
+```
+FUNCTION readProjectsFromCSV(filePath):
+    projects = empty list
+    
+    OPEN CSV file with headers: projectID, isTeam, isFirstInCat, Category
+    
+    FOR each record in CSV:
+        project = new ScienceProject()
+        project.projectID = parse integer from "projectID" column
+        project.isTeam = parse boolean from "isTeam" column
+        project.isFirstInCat = parse boolean from "isFirstInCat" column
+        project.category = get string from "Category" column
+        
+        ADD project to projects list
+    END FOR
+    
+    CLOSE CSV file
+    RETURN projects
+END FUNCTION
+```
+
+## Core Assignment Algorithm Pseudocode
+
+```
+FUNCTION assignProjectsToSlots(projects, tableSlots):
+    // Step 1: Filter and sort available slots
+    availableSlots = empty list
+    FOR each slot in tableSlots:
+        IF slot is not reserved THEN
+            ADD slot to availableSlots
+        END IF
+    END FOR
+    
+    SORT availableSlots by (row, then by tableSlotID)
+    
+    // Step 2: Organize projects by category with priority
+    orderedProjects = organizeProjectsByCategory(projects)
+    
+    // Step 3: Initialize all assignments as unassigned
+    assignments = empty list
+    FOR each slot in tableSlots:
+        assignment = new SlotAssignment(slot.row, slot.tableSlotID)
+        assignment.isUnassigned = true
+        ADD assignment to assignments list
+    END FOR
+    
+    SORT assignments by (row, then by tableSlotID)
+    
+    // Step 4: Assign projects to available slots sequentially
+    projectIndex = 0
+    FOR i = 0 to assignments.length - 1:
+        IF projectIndex >= orderedProjects.length THEN
+            BREAK // No more projects to assign
+        END IF
+        
+        assignment = assignments[i]
+        
+        // Find corresponding table slot to check availability
+        correspondingSlot = find slot in tableSlots WHERE 
+            (slot.row == assignment.row AND slot.tableSlotID == assignment.tableSlotID)
+        
+        IF correspondingSlot exists AND correspondingSlot is available THEN
+            project = orderedProjects[projectIndex]
+            assignment.assignProject(project)
+            projectIndex = projectIndex + 1
+        END IF
+    END FOR
+    
+    RETURN assignments
+END FUNCTION
+```
+
+## Project Organization Pseudocode
+
+```
+FUNCTION organizeProjectsByCategory(projects):
+    // Group projects by category
+    projectsByCategory = group projects by category field
+    
+    orderedProjects = empty list
+    sortedCategories = sort category names alphabetically
+    
+    // Process each category
+    FOR each category in sortedCategories:
+        categoryProjects = projectsByCategory[category]
+        
+        // Sort within category: first-in-category projects first, then by project ID
+        SORT categoryProjects by:
+            PRIMARY: isFirstInCat (true values first)
+            SECONDARY: projectID (ascending)
+        
+        ADD all categoryProjects to orderedProjects
+    END FOR
+    
+    RETURN orderedProjects
+END FUNCTION
+```
+
+## CSV Writing Pseudocode
+
+```
+FUNCTION writeAssignmentsToCSV(assignments, filePath):
+    OPEN CSV file for writing with headers: Row, tableSlotID, isUnassigned, projectID, isTeam, Category
+    
+    FOR each assignment in assignments:
+        IF assignment.isUnassigned THEN
+            WRITE record: (assignment.row, assignment.tableSlotID, "TRUE", "", "", "")
+        ELSE
+            teamStatus = assignment.isTeam ? "TRUE" : "FALSE"
+            WRITE record: (assignment.row, assignment.tableSlotID, "FALSE", 
+                          assignment.projectID, teamStatus, assignment.category)
+        END IF
+    END FOR
+    
+    CLOSE CSV file
+END FUNCTION
+```
+
+## Summary Generation Pseudocode
+
+```
+FUNCTION generateAssignmentSummary(assignments, projects, tableSlots):
+    // Calculate statistics
+    totalSlots = tableSlots.length
+    availableSlots = count slots WHERE isReserved == false
+    reservedSlots = count slots WHERE isReserved == true
+    assignedSlots = count assignments WHERE isUnassigned == false
+    unassignedSlots = availableSlots - assignedSlots
+    
+    totalProjects = projects.length
+    assignedProjects = assignedSlots
+    unassignedProjects = totalProjects - assignedProjects
+    
+    // Build summary text
+    summary = "=== SCIENCE FAIR ASSIGNMENT SUMMARY ===\n"
+    summary += "Total table slots: {totalSlots}\n"
+    summary += "Available slots: {availableSlots}\n"
+    summary += "Reserved slots: {reservedSlots}\n"
+    summary += "Slots assigned: {assignedSlots}\n"
+    summary += "Slots unassigned: {unassignedSlots}\n"
+    summary += "Total projects: {totalProjects}\n"
+    summary += "Projects assigned: {assignedProjects}\n"
+    summary += "Projects unassigned: {unassignedProjects}\n"
+    
+    // Add category breakdown
+    categoryCount = group projects by category and count each group
+    summary += "\n=== PROJECTS BY CATEGORY ===\n"
+    FOR each (category, count) in sorted categoryCount:
+        summary += "- {category}: {count} projects\n"
+    END FOR
+    
+    // Add unassigned projects list if any
+    IF unassignedProjects > 0 THEN
+        assignedProjectIds = extract projectID from all assigned assignments
+        summary += "\n=== UNASSIGNED PROJECTS ===\n"
+        FOR each project in projects:
+            IF project.projectID not in assignedProjectIds THEN
+                summary += "- Project {project.projectID} ({project.category})\n"
+            END IF
+        END FOR
+    END IF
+    
+    RETURN summary
+END FUNCTION
+```
+
+## GUI Mode Pseudocode
+
+```
+FUNCTION createGUI():
+    // Create main window
+    window = new JFrame("Science Fair Table Assignment")
+    
+    // Create input fields
+    tableSlotsFileField = new JTextField()
+    projectsFileField = new JTextField()
+    outputFileField = new JTextField(default: Desktop/assignment_results.csv)
+    
+    // Create buttons
+    browseSlotsButton = new JButton("Browse") -> opens file chooser for table slots
+    browseProjectsButton = new JButton("Browse") -> opens file chooser for projects
+    browseOutputButton = new JButton("Browse") -> opens save dialog for output
+    runButton = new JButton("Assign Projects to Table Slots")
+    
+    // Create result display area
+    resultArea = new JTextArea(read-only, monospace font)
+    
+    // Layout components in organized panels
+    inputPanel = arrange input fields and browse buttons in grid
+    ADD inputPanel to top of window
+    ADD scrollable resultArea to center of window
+    ADD instructions text to bottom of window
+    
+    // Event handlers
+    runButton.onClick = runAssignmentInBackground()
+    
+    SHOW window
+END FUNCTION
+
+FUNCTION runAssignmentInBackground():
+    // Validate all file paths are provided and exist
+    IF any required file path is empty or invalid THEN
+        SHOW error dialog
+        RETURN
+    END IF
+    
+    // Disable run button and clear results
+    runButton.enabled = false
+    resultArea.text = "Processing assignment...\n"
+    
+    // Run assignment in background thread
+    START background thread:
+        TRY:
+            // Same logic as command line mode but update UI progressively
+            UPDATE resultArea with "Reading table slots..."
+            tableSlots = readTableSlotsFromCSV(tableSlotsFile)
+            UPDATE resultArea with "Loaded {count} table slots"
+            
+            UPDATE resultArea with "Reading projects..."
+            projects = readProjectsFromCSV(projectsFile)
+            UPDATE resultArea with "Loaded {count} projects"
+            
+            UPDATE resultArea with "Running assignment algorithm..."
+            assignments = assignProjectsToSlots(projects, tableSlots)
+            
+            UPDATE resultArea with "Writing results..."
+            writeAssignmentsToCSV(assignments, outputFile)
+            
+            summary = generateAssignmentSummary(assignments, projects, tableSlots)
+            UPDATE resultArea with summary
+            UPDATE resultArea with "Assignment completed successfully!"
+            
+        CATCH any exception:
+            UPDATE resultArea with error message
+        FINALLY:
+            runButton.enabled = true
+        END TRY
+    END background thread
+END FUNCTION
+```
+
+## Data Models Pseudocode
+
+### TableSlot Class
+```
+CLASS TableSlot:
+    PROPERTIES:
+        row: integer
+        rowNumSlots: integer  
+        tableSlotID: integer
+        isReserved: boolean
+    
+    METHODS:
+        isAvailable(): return NOT isReserved
+        toString(): return formatted string representation
+END CLASS
+```
+
+### ScienceProject Class
+```
+CLASS ScienceProject:
+    PROPERTIES:
+        projectID: integer
+        isTeam: boolean
+        isFirstInCat: boolean
+        category: string
+    
+    METHODS:
+        toString(): return formatted string representation
+END CLASS
+```
+
+### SlotAssignment Class
+```
+CLASS SlotAssignment:
+    PROPERTIES:
+        row: integer
+        tableSlotID: integer
+        isUnassigned: boolean
+        projectID: integer (nullable)
+        isTeam: boolean (nullable)
+        category: string (nullable)
+    
+    METHODS:
+        assignProject(project): 
+            SET projectID = project.projectID
+            SET isTeam = project.isTeam
+            SET category = project.category
+            SET isUnassigned = false
+        
+        toString(): return formatted string representation
+END CLASS
+```
+
+## Boolean Parsing Utility
+```
+FUNCTION parseBoolean(value):
+    IF value is null or empty THEN
+        RETURN false
+    END IF
+    
+    uppercaseValue = value.trim().toUpperCase()
+    RETURN (uppercaseValue == "TRUE" OR uppercaseValue == "YES" OR uppercaseValue == "1")
+END FUNCTION
+```
+
+## Error Handling Strategy
+```
+ALL file operations wrapped in try-catch blocks
+ALL user inputs validated before processing
+ALL error messages displayed to user with clear descriptions
+GUI operations run in background threads to prevent UI freezing
+Command line mode exits with appropriate error codes
+Debug mode available for troubleshooting data issues
+```
+
+## Key Algorithm Features
+1. **Category-based grouping**: Projects organized by category for logical placement
+2. **Priority handling**: "First in category" projects placed before others in same category
+3. **Sequential assignment**: Projects assigned to available slots in row/slot order
+4. **Complete output**: All table slots included in output (assigned or unassigned)
+5. **Flexible input handling**: Supports various boolean formats (true/false, yes/no, 1/0)
+6. **Comprehensive reporting**: Detailed statistics and unassigned project tracking

@@ -1,0 +1,61 @@
+projectID,isTeam,isFirstInCat,Category
+101,FALSE,TRUE,SR - Animal Sciences
+102,FALSE,FALSE,SR - Animal Sciences
+103,FALSE,FALSE,SR - Animal Sciences
+104,FALSE,FALSE,SR - Animal Sciences
+105,FALSE,FALSE,SR - Animal Sciences
+106,FALSE,FALSE,SR - Animal Sciences
+111,FALSE,TRUE,SR - Behavioral and Social Sciences
+112,FALSE,FALSE,SR - Behavioral and Social Sciences
+113,TRUE,FALSE,SR - Behavioral and Social Sciences
+114,FALSE,FALSE,SR - Behavioral and Social Sciences
+115,FALSE,FALSE,SR - Behavioral and Social Sciences
+116,TRUE,FALSE,SR - Behavioral and Social Sciences
+117,FALSE,FALSE,SR - Behavioral and Social Sciences
+118,FALSE,FALSE,SR - Behavioral and Social Sciences
+119,FALSE,FALSE,SR - Behavioral and Social Sciences
+120,FALSE,FALSE,SR - Behavioral and Social Sciences
+121,FALSE,FALSE,SR - Behavioral and Social Sciences
+122,FALSE,FALSE,SR - Behavioral and Social Sciences
+123,FALSE,FALSE,SR - Behavioral and Social Sciences
+124,FALSE,FALSE,SR - Behavioral and Social Sciences
+131,TRUE,TRUE,SR - Biochemistry
+132,TRUE,FALSE,SR - Biochemistry
+141,FALSE,TRUE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+142,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+143,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+144,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+145,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+146,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+147,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+148,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+149,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+150,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+151,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+152,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+153,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+154,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+155,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+156,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+157,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+158,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+159,FALSE,FALSE,"SR - Biomedical/Health Sciences, and Biomedical Engineering"
+171,TRUE,TRUE,SR - Cellular and Molecular Biology
+172,FALSE,FALSE,SR - Cellular and Molecular Biology
+173,FALSE,FALSE,SR - Cellular and Molecular Biology
+174,FALSE,FALSE,SR - Cellular and Molecular Biology
+181,FALSE,TRUE,SR - Chemistry
+182,FALSE,FALSE,SR - Chemistry
+183,TRUE,FALSE,SR - Chemistry
+191,FALSE,TRUE,SR - Computational Biology and Bioinformatics
+192,FALSE,FALSE,SR - Computational Biology and Bioinformatics
+193,FALSE,FALSE,SR - Computational Biology and Bioinformatics
+194,FALSE,FALSE,SR - Computational Biology and Bioinformatics
+195,FALSE,FALSE,SR - Computational Biology and Bioinformatics
+196,TRUE,FALSE,SR - Computational Biology and Bioinformatics
+197,FALSE,FALSE,SR - Computational Biology and Bioinformatics
+198,FALSE,FALSE,SR - Computational Biology and Bioinformatics
+199,FALSE,FALSE,SR - Computational Biology and Bioinformatics
+200,FALSE,FALSE,SR - Computational Biology and Bioinformatics
+201,FALSE,FALSE,SR - Computational Biology and Bioinformatics
+202,FALSE,FALSE,SR - Computational Biology and Bioinformatics

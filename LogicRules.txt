@@ -1,0 +1,194 @@
+# Science Fair Table Assignment - Logic Rules
+
+## Overview
+This document describes the specific logic rules used to assign science fair projects to table slots based on the detailed specification pseudocode. The algorithm operates like a "casino dealer" that deals projects slot-by-slot, applying four specific unassignment rules.
+
+## Input Files Structure
+
+### SampleInputCSV1.csv (Table Slots)
+• **Purpose**: Defines all available table slots in the science fair layout
+• **Format**: Row, rowNumSlots, tableSlotID, isReserved
+• **Key Points**:
+  - Each row represents a physical row in the science fair venue
+  - `tableSlotID` values repeat across different rows (e.g., Row 1 Slot 1, Row 2 Slot 1)
+  - `isReserved` = TRUE means the slot is not available for assignment
+  - `rowNumSlots` indicates total slots in that row (12 for rows 1-3, 14 for rows 4-5)
+
+### SampleInputCSV2.csv (Projects)
+• **Purpose**: Lists all science fair projects requiring table assignments (ordered by category)
+• **Format**: projectID, isTeam, isFirstInCat, Category
+• **Key Points**:
+  - `projectID` is unique identifier for each project
+  - `isTeam` indicates if project is done by multiple students (requires full table)
+  - `isFirstInCat` marks the first project in each category (triggers category spacing)
+  - `Category` groups projects by scientific discipline
+
+## Core Assignment Algorithm - Slot-by-Slot Processing
+
+### A. Initialization
+• **currentRow** = 1
+• **currentSlot** = 0  
+• **currentProject** = first project from Input CSV #2
+• **lastCategoryEndedAtRowEnd** = false (tracks category spacing logic)
+
+### B. Main Loop - Table Slot Iteration
+The algorithm iterates through **every table slot** in Input CSV #1 (not projects), applying four unassignment rules before attempting assignment.
+
+**For each table slot:**
+1. Read slot data from Input CSV #1
+2. Check four unassignment conditions (see below)
+3. If none apply, assign current project and advance to next project
+4. Write assignment result to Output CSV
+
+## Four Unassignment Rules (Applied in Order)
+
+### Rule 1: Reserved Slots
+• **Condition**: `isReserved = TRUE` in Input CSV #1
+• **Action**: Leave slot unassigned, write unassigned row to output
+• **Reason**: Slot is marked as unavailable for project assignment
+• **Next Step**: Continue to next table slot (don't advance project)
+
+### Rule 2: Team Projects at Row End
+• **Condition**: Current project is team AND current slot is last slot in row
+• **Action**: Leave slot unassigned, write unassigned row to output
+• **Reason**: Team projects need two consecutive slots (full table), can't fit at row end
+• **Next Step**: Continue to next table slot (don't advance project)
+
+### Rule 3: Category Spacing
+• **Condition**: Current project is first in category AND slot is not #1 in row AND previous category didn't end at row end
+• **Action**: Leave slot unassigned, write unassigned row to output
+• **Reason**: One empty slot required between categories (except after row ends)
+• **Next Step**: Continue to next table slot (don't advance project, try again)
+
+### Rule 4: Team Projects on Even Slots
+• **Condition**: Current project is team AND current slot is even-numbered
+• **Action**: Leave slot unassigned, write unassigned row to output
+• **Reason**: Team projects must start on odd slots to span full table (1-2, 7-8, not 2-3, 8-9)
+• **Next Step**: Continue to next table slot (don't advance project)
+
+## Assignment Execution (When No Rules Apply)
+
+### Solo Project Assignment
+• **Action**: Assign project to current slot
+• **Output**: Write one row with project details
+• **Row End Check**: Update `lastCategoryEndedAtRowEnd` if slot = rowNumSlots
+• **Next Step**: Advance to next project
+
+### Team Project Assignment
+• **Action**: Assign project to current slot AND next consecutive slot
+• **Output**: Write two rows with same project details
+• **Row End Check**: Update `lastCategoryEndedAtRowEnd` based on second slot position
+• **Next Step**: Advance to next project, skip next slot in main loop
+
+## Detailed Assignment Algorithm Flow
+
+### Pseudocode Implementation (from Specification)
+
+```
+A. Initialization:
+   set currentRow = 1
+   set currentSlot = 0  
+   set currentProject from the first row in Input CSV #2
+
+B. Main Loop: 
+   while not finished with Input CSV #1:
+       set currentSlot++ and read its data from Input CSV #1
+       set isUnassigned = False
+       
+       // Rule 1: Reserved slots
+       if isReserved(currentSlot) = True:
+           set isUnassigned = True
+           write Unassigned row to Output CSV for currentSlot
+           continue to next table slot iteration
+       
+       // Rule 2: Team projects at row end  
+       if isTeam(currentProject) AND currentSlot = rowNumSlots(currentRow):
+           set isUnassigned = True
+           write Unassigned row to Output CSV for currentSlot
+           continue to next table slot iteration
+       
+       // Rule 3: Category spacing
+       if isFirstInCat(currentProject) = True AND currentSlot > 1 AND !lastCategoryEndedAtRowEnd:
+           set isUnassigned = True
+           write Unassigned row to Output CSV for currentSlot
+           set currentSlot++
+           continue (do NOT go to next loop iteration)
+       
+       // Rule 4: Team projects on even slots
+       if isTeam(currentProject) AND isEven(currentSlot):
+           set isUnassigned = True  
+           write Unassigned row to Output CSV for currentSlot
+           continue to next table slot iteration
+       
+       // Assignment logic
+       if isTeam(currentProject):
+           write row to Output CSV with currentProject assigned to currentSlot
+           set currentSlot++
+           write row to Output CSV with currentProject assigned to currentSlot
+       else:
+           write row to Output CSV with currentProject assigned to currentSlot
+       
+       set currentProject++ (advance to next project)
+```
+
+## Special Cases and Edge Conditions
+
+### Row Structure Handling
+• **Variable Row Sizes**: Rows 1-3 have 12 slots, Rows 4-5 have 14 slots
+• **Row Transitions**: Handled automatically by input CSV structure
+• **Row End Detection**: `currentSlot = rowNumSlots(currentRow)`
+
+### Team Project Table Requirements
+• **Full Table Rule**: Team projects must occupy consecutive slots (odd-even pairs)
+• **Valid Placements**: Slots 1-2, 3-4, 5-6, 7-8, 9-10, 11-12, 13-14
+• **Invalid Placements**: Slots 2-3, 4-5, 6-7, 8-9, 10-11, 12-13 (bridge tables)
+• **Row End Constraint**: Cannot place team project if only last slot available
+
+### Category Spacing Rules
+• **Standard Spacing**: One empty slot between different categories
+• **Row End Exception**: No spacing needed if previous category ended at row end
+• **Multiple Attempts**: Category spacing only uses one slot, then normal assignment resumes
+• **First Category**: No spacing before first category (Animal Sciences)
+
+### Assignment Priority and Flow
+• **Input Order Preservation**: Projects assigned in exact order from Input CSV #2
+• **No Reordering**: No alphabetical sorting or priority reordering of projects
+• **Sequential Processing**: Each project assigned before moving to next
+• **Completion Handling**: Continue until all slots processed or all projects assigned
+
+## Output File Format Requirements
+
+### Required Columns (6 fields)
+• **Row**: Physical row number from input (integer)
+• **tableSlotID**: Slot identifier within row (integer) 
+• **isUnassigned**: Assignment status (TRUE for empty, FALSE for assigned)
+• **projectID**: Project identifier (integer when assigned, empty when unassigned)
+• **isTeam**: Team project flag (TRUE/FALSE when assigned, empty when unassigned)
+• **Category**: Project category (string when assigned, empty when unassigned)
+
+### Data Population Rules
+• **Assigned Slots**: isUnassigned=FALSE, all project fields populated
+• **Unassigned Slots**: isUnassigned=TRUE, project fields empty/blank
+• **Slot Coverage**: Every slot from Input CSV #1 appears exactly once in output
+• **Ordering**: Maintain exact row/slot sequence from input file
+
+## Assignment Outcome Scenarios
+
+### Normal Operation
+• **64 Total Slots**: All slots from Input CSV #1 included in output
+• **63 Available Slots**: One reserved slot (4,14) left unassigned
+• **60 Projects**: All projects from Input CSV #2 considered for assignment
+• **Expected Result**: 60 projects assigned, 3 slots unassigned (1 reserved + 2 spacing)
+
+### Unassignment Reasons in Output
+• **Reason 1**: Reserved slots (marked in Input CSV #1)
+• **Reason 2**: Team projects blocked by row end
+• **Reason 3**: Category spacing requirements  
+• **Reason 4**: Team projects blocked by even slot positions
+
+### Error Conditions and Validation
+• **Input File Validation**: Verify CSV format and required columns
+• **Data Type Validation**: Ensure boolean and integer fields are correct format
+• **Completeness Check**: Verify all input slots appear in output
+• **Assignment Verification**: Confirm no projects assigned to reserved slots
+• **Team Project Verification**: Confirm team projects only on consecutive odd-even pairs

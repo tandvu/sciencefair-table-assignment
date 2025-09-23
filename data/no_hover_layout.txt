@@ -1,0 +1,22 @@
+Science Fair Table Assignment - Visual Layout
+===========================================
+
+Row 1: [101-Anim            ] [102-Anim            ] [103-Anim            ] [104-Anim            ] [105-Anim            ] [106-Anim            ] [EMPTY               ] [111-Behv            ] [112-Behv            ] [EMPTY               ] [113-Behv---113-Behv ] [113-Behv---113-Behv ]
+Row 2: [114-Behv            ] [115-Behv            ] [116-Behv---116-Behv ] [116-Behv---116-Behv ] [117-Behv            ] [118-Behv            ] [119-Behv            ] [120-Behv            ] [121-Behv            ] [122-Behv            ] [123-Behv            ] [124-Behv            ]
+Row 3: [131-Bioc---131-Bioc ] [131-Bioc---131-Bioc ] [132-Bioc---132-Bioc ] [132-Bioc---132-Bioc ] [EMPTY               ] [141-Biom            ] [142-Biom            ] [143-Biom            ] [144-Biom            ] [145-Biom            ] [146-Biom            ] [147-Biom            ]
+Row 4: [148-Biom            ] [149-Biom            ] [150-Biom            ] [151-Biom            ] [152-Biom            ] [153-Biom            ] [154-Biom            ] [155-Biom            ] [156-Biom            ] [157-Biom            ] [158-Biom            ] [159-Biom            ] [EMPTY               ] [EMPTY               ]
+Row 5: [171-Cell---171-Cell ] [171-Cell---171-Cell ] [172-Cell            ] [173-Cell            ] [174-Cell            ] [EMPTY               ] [181-Chem            ] [182-Chem            ] [183-Chem---183-Chem ] [183-Chem---183-Chem ] [EMPTY               ] [191-Comp            ] [192-Comp            ] [193-Comp            ]
+
+Legend:
+  [123-Anim           ] = Individual project 123 (Animal Sciences)
+  [123-Behv---123-Behv] = Team project 123 (Behavioral Sciences, spans 2 slots)
+  [EMPTY              ] = Reserved or unassigned slot
+
+Category Abbreviations:
+  Anim = Animal Sciences
+  Behv = Behavioral and Social Sciences
+  Bioc = Biochemistry
+  Biom = Biomedical/Health Sciences, and Biomedical Engineering
+  Cell = Cellular and Molecular Biology
+  Chem = Chemistry
+  Comp = Computational Biology and Bioinformatics
