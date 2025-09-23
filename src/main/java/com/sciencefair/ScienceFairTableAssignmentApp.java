@@ -93,7 +93,7 @@ public class ScienceFairTableAssignmentApp {
         }
     }
     
-    private static void runCommandLine(String tableSlotsFile, String projectsFile, String outputFile) {
+    public static void runCommandLine(String tableSlotsFile, String projectsFile, String outputFile) {
         try {
             System.out.println("Science Fair Table Assignment - Command Line Mode");
             System.out.println("=".repeat(50));
@@ -127,13 +127,10 @@ public class ScienceFairTableAssignmentApp {
             System.out.println("Saving results to: " + outputFile);
             ScienceFairCsvUtil.writeSlotAssignments(assignments, outputFile);
             
-            // Generate visual layout (both HTML and TXT)
-            String htmlLayoutFile = outputFile.replace(".csv", "_layout.html");
-            String txtLayoutFile = outputFile.replace(".csv", "_layout.txt");
-            System.out.println("Generating HTML layout: " + htmlLayoutFile);
-            generateHtmlLayout(assignments, htmlLayoutFile);
-            System.out.println("Generating text layout: " + txtLayoutFile);
-            generateVisualLayout(assignments, txtLayoutFile);
+            // Generate single HTML layout file
+            String htmlOutFile = outputFile.replace(".csv", ".html");
+            System.out.println("Generating HTML layout: " + htmlOutFile);
+            generateHtmlLayout(assignments, htmlOutFile);
             
             // Print summary
             System.out.println("\n" + assignmentService.generateAssignmentSummary(assignments, projects, tableSlots));

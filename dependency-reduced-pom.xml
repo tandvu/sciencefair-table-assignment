@@ -28,7 +28,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>com.sciencefair.ScienceFairTableAssignmentApp</mainClass>
+                  <mainClass>com.sciencefair.gui.ScienceFairAssignmentGui</mainClass>
                 </transformer>
               </transformers>
               <finalName>science-fair-table-assignment</finalName>

@@ -29,33 +29,73 @@ A Java-based standalone application for automatically assigning science fair pro
 3. No additional installation required
 
 ## Usage
+## macOS Tips & Optimization
 
-### GUI Mode (Recommended)
+### Terminal Usage
+On macOS, use the built-in Terminal app (found in Applications > Utilities). The default shell is Zsh, which supports tab-completion and works well with the CLI mode:
 
-Run the application without arguments to launch the graphical interface:
-
-```bash
-java -jar science-fair-table-assignment.jar
+```zsh
+java -jar science-fair-table-assignment.jar --cli
 ```
 
-1. Click "Browse" to select your projects CSV file
-2. Click "Browse" to select your tables CSV file  
-3. Choose output location (defaults to Desktop)
-4. Click "Assign Projects to Tables"
-5. View results and summary in the application
+If you prefer Bash, you can switch shells, but Zsh is recommended for best compatibility.
 
-### Command Line Mode
+### GUI Experience
+The GUI modes (`--gui` and `--html`) use native file dialogs and should look modern on macOS. Output files default to your Desktop for convenience.
 
-For automated processing or scripting:
+### Running the App
+- Double-clicking the JAR file will launch the GUI (if Java is installed and associated with JARs).
+- For CLI mode, always use Terminal for best tab-completion and input experience.
 
-```bash
-java -jar science-fair-table-assignment.jar projects.csv tables.csv output.csv
+### Troubleshooting on macOS
+- If you see a security warning, right-click the JAR and choose "Open" to bypass Gatekeeper.
+- If Java is not found, install it from [Oracle](https://www.oracle.com/java/technologies/downloads/) or use [Homebrew](https://brew.sh/) with `brew install --cask temurin`.
+- If tab-completion does not work, make sure you are not in a "dumb" terminal (avoid running in VS Code's integrated terminal for CLI mode).
+
+## How to Run
+
+You can run the Science Fair Table Assignment Tool in four ways:
+
+### 1. Command-Line Interface (CLI) Mode
+
+Run in interactive terminal mode, where you will be prompted to enter file names and can use tab-completion:
+
+```powershell
+java -jar science-fair-table-assignment.jar --cli
 ```
 
-Example:
-```bash
-java -jar science-fair-table-assignment.jar sample_projects.csv sample_tables.csv assignments.csv
+Follow the prompts to select your input files and generate output.
+
+### 2. Graphical User Interface (GUI) Mode
+
+
+#### Assignment GUI
+Launch a graphical window to select two input files (tables and projects) and generate output:
+
+```powershell
+java -jar science-fair-table-assignment.jar --gui
 ```
+
+Use the file browser to select your projects and tables CSV files, choose output location, and view results. The output folder is automatically created next to the JAR file and will contain both output.csv and output.html.
+
+#### HTML Generator GUI
+Launch a graphical window to select an existing output CSV file and generate an HTML file:
+
+```powershell
+java -jar science-fair-table-assignment.jar --html
+```
+
+Use the file browser to select your `output.csv` file. The program will generate `output_from_csv_conversion.html` in the same location.
+
+### 3. Batch Mode (CSV with Two Tabs)
+
+Process a CSV file that contains two sheets/tabs for input (feature coming soon):
+
+```powershell
+java -jar science-fair-table-assignment.jar --batch
+```
+
+This mode will automatically process both input sheets and generate output. (Not yet implemented)
 
 ## CSV File Formats
 

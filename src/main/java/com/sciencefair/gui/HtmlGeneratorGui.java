@@ -30,7 +30,7 @@ public class HtmlGeneratorGui extends JFrame {
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             File csvFile = fileChooser.getSelectedFile();
-            String htmlFile = csvFile.getParent() + File.separator + csvFile.getName().replace(".csv", "_gui_layout.html");
+            String htmlFile = csvFile.getParent() + File.separator + "output_from_csv_conversion.html";
             try {
                 // Call the main HTML generation logic from ScienceFairTableAssignmentApp
                 com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayoutFromCsv(csvFile.getAbsolutePath(), htmlFile);
