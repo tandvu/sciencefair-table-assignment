@@ -190,8 +190,18 @@ public class ScienceFairTableAssignmentApp {
             writer.println("        .table-container { overflow-x: auto; margin: 30px 0; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); }");
             writer.println("        table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 11px; background: white; border-radius: 12px; overflow: hidden; }");
             writer.println("        .row-label { background: linear-gradient(135deg, #4a5568, #2d3748); color: white; padding: 12px 16px; font-weight: 600; text-align: center; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); min-width: 60px; }");
-            writer.println("        .slot { border: none; padding: 4px 2px; text-align: center; min-width: 60px; font-weight: 500; position: relative; font-size: 9px; }");
-            writer.println("        .table-block { display: inline-block; margin: 0 3px 4px 0; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); background: #fffbe6; position: relative; }");
+            writer.println("        .slot { border-top: 2px solid transparent !important; border-bottom: 2px solid transparent !important; border-left: none !important; border-right: none !important; box-shadow: inset 0 0 0 2px transparent; padding: 4px 2px; text-align: center; min-width: 60px; font-weight: 500; position: relative; font-size: 9px; border-radius: 4px; }");
+            writer.println("        .anim { border-color: #68d391 !important; box-shadow: inset 0 0 0 2px #68d391 !important; }");
+            writer.println("        .behv { border-color: #4299e1 !important; box-shadow: inset 0 0 0 2px #4299e1 !important; }");
+            writer.println("        .bioc { border-color: #d69e2e !important; box-shadow: inset 0 0 0 2px #d69e2e !important; }");
+            writer.println("        .biom { border-color: #d53f8c !important; box-shadow: inset 0 0 0 2px #d53f8c !important; }");
+            writer.println("        .cell { border-color: #805ad5 !important; box-shadow: inset 0 0 0 2px #805ad5 !important; }");
+            writer.println("        .chem { border-color: #e53e3e !important; box-shadow: inset 0 0 0 2px #e53e3e !important; }");
+            writer.println("        .comp { border-color: #38b2ac !important; box-shadow: inset 0 0 0 2px #38b2ac !important; }");
+            writer.println("        .empty { border-color: #a0aec0 !important; box-shadow: inset 0 0 0 2px #a0aec0 !important; }");
+            writer.println("        .table-block.non-team-table { background: #e5e7eb !important; }");
+            writer.println("        .table-block { display: inline-block; margin: 0 3px 4px 0; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); background: #fffbe6; position: relative; min-height: 70px; }");
+            writer.println("        .table-block.empty-table { background: inherit !important; }");
             writer.println("        .table-block.team-table { background: #fffde3; }");
             writer.println("        .table-header { background: #e5e7eb; padding: 2px 4px; text-align: center; font-size: 8px; font-weight: 600; color: #495057; border-bottom: 1px solid #dee2e6; position: relative; }");
             writer.println("        .team-table .table-header { background: #fffde3 !important; }");
@@ -301,7 +311,9 @@ public class ScienceFairTableAssignmentApp {
                             isTeamTable = true;
                         }
                     }
-                    writer.println("                <div class='table-block" + (isTeamTable ? " team-table" : "") + "'>");
+                    boolean isEmptyTable = assignment1.isUnassigned() && (slotIndexStart + 1 >= rowAssignments.size() || rowAssignments.get(slotIndexStart + 1).isUnassigned());
+                    boolean isNonTeamTable = !isTeamTable && !isEmptyTable;
+                    writer.println("                <div class='table-block" + (isTeamTable ? " team-table" : "") + (isEmptyTable ? " empty-table" : "") + (isNonTeamTable ? " non-team-table" : "") + "'>");
                     if (isTeamTable) {
                         writer.print("<span class='team-icon' title='Team Project'>👥</span>");
                     }
