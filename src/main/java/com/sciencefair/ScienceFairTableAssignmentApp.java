@@ -200,7 +200,7 @@ public class ScienceFairTableAssignmentApp {
             writer.println("        .comp { border-color: #38b2ac !important; box-shadow: inset 0 0 0 2px #38b2ac !important; }");
             writer.println("        .empty { border-color: #a0aec0 !important; box-shadow: inset 0 0 0 2px #a0aec0 !important; }");
             writer.println("        .table-block.non-team-table { background: #e5e7eb !important; }");
-            writer.println("        .table-block { display: inline-block; margin: 0 3px 4px 0; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); background: #fffbe6; position: relative; min-height: 70px; }");
+            writer.println("        .table-block { display: inline-block; margin: 0 3px 4px 0; border: 2px solid #b8b8b8; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); background: #fffbe6; position: relative; min-height: 70px; }");
             writer.println("        .table-block.empty-table { background: inherit !important; }");
             writer.println("        .table-block.team-table { background: #fffde3; }");
             writer.println("        .table-header { background: #e5e7eb; padding: 2px 4px; text-align: center; font-size: 8px; font-weight: 600; color: #495057; border-bottom: 1px solid #dee2e6; position: relative; }");
