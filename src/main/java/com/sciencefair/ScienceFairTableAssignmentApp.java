@@ -519,9 +519,13 @@ public class ScienceFairTableAssignmentApp {
         if (!assignment.isUnassigned() && assignment.getProjectID() != null) {
             Integer projectID = assignment.getProjectID();
             String category = assignment.getCategory();
+            String division = "";
+            if (category != null && category.length() >= 2) {
+                division = category.substring(0, 2).toUpperCase();
+            }
             String categoryAbbrev = getCategoryAbbreviation(category);
-            
-            return "<strong>P" + projectID + "</strong><br><small>" + categoryAbbrev + "</small>";
+            String label = division + "-" + categoryAbbrev;
+            return "<strong>P" + projectID + "</strong><br><small>" + label + "</small>";
         } else {
             return "<strong>EMPTY</strong>";
         }
