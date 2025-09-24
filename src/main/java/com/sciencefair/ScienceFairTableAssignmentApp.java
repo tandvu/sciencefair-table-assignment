@@ -225,10 +225,10 @@ public class ScienceFairTableAssignmentApp {
             writer.println("        .legend-table { font-size: 11px; width: 100%; }");
             writer.println("        .legend-table td { padding: 4px 6px; vertical-align: middle; }");
             writer.println("        .legend-sample { width: 36px; height: 18px; border-radius: 4px; }");
-            writer.println("        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }");
-            writer.println("        .stat-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; }");
-            writer.println("        .stat-number { font-size: 2em; font-weight: 700; color: #4a5568; }");
-            writer.println("        .stat-label { color: #718096; font-size: 0.9em; margin-top: 5px; }");
+            writer.println("        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 16px; }");
+            writer.println("        .stat-card { background: white; padding: 8px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); text-align: center; }");
+            writer.println("        .stat-number { font-size: 1.2em; font-weight: 700; color: #4a5568; }");
+            writer.println("        .stat-label { color: #718096; font-size: 0.8em; margin-top: 2px; }");
             writer.println("        @media (max-width: 768px) { .container { padding: 15px; } h1 { font-size: 1.8em; } .slot { min-width: 70px; padding: 6px 2px; font-size: 10px; } .row-label { padding: 8px 10px; font-size: 10px; } }");
             writer.println("    </style>");
             writer.println("</head>");
@@ -236,27 +236,36 @@ public class ScienceFairTableAssignmentApp {
             writer.println("    <div class='container'>");
             writer.println("        <h1>Science Fair Table Assignment</h1>");
             
-            // Add statistics cards
-            int totalSlots = assignments.size();
-            long assignedSlots = assignments.stream().mapToLong(a -> a.isUnassigned() ? 0 : 1).sum();
-            long teamProjects = assignments.stream().mapToLong(a -> (a.getIsTeam() != null && a.getIsTeam()) ? 1 : 0).sum();
-            
+            // Only keep Team Projects, Total Projects, and Table Counts
+            // Team Projects: count unique project IDs where isTeam is true
+            Set<Integer> teamProjectIds = assignments.stream()
+                .filter(a -> a.getIsTeam() != null && a.getIsTeam() && a.getProjectID() != null)
+                .map(SlotAssignment::getProjectID)
+                .collect(Collectors.toSet());
+            int teamProjects = teamProjectIds.size();
+
+            // Total Projects: count unique project IDs (assigned)
+            Set<Integer> totalProjectIds = assignments.stream()
+                .filter(a -> a.getProjectID() != null && !a.isUnassigned())
+                .map(SlotAssignment::getProjectID)
+                .collect(Collectors.toSet());
+            int totalProjects = totalProjectIds.size();
+
+            // Table Counts: count total tables (each table = 2 slots)
+            int tableCount = assignments.size() / 2;
+
             writer.println("        <div class='stats'>");
             writer.println("            <div class='stat-card'>");
-            writer.println("                <div class='stat-number'>" + totalSlots + "</div>");
-            writer.println("                <div class='stat-label'>Total Slots</div>");
+            writer.println("                <div class='stat-number'>" + totalProjects + "</div>");
+            writer.println("                <div class='stat-label'>Total Projects</div>");
             writer.println("            </div>");
             writer.println("            <div class='stat-card'>");
-            writer.println("                <div class='stat-number'>" + assignedSlots + "</div>");
-            writer.println("                <div class='stat-label'>Assigned</div>");
-            writer.println("            </div>");
-            writer.println("            <div class='stat-card'>");
-            writer.println("                <div class='stat-number'>" + (totalSlots - assignedSlots) + "</div>");
-            writer.println("                <div class='stat-label'>Available</div>");
-            writer.println("            </div>");
-            writer.println("            <div class='stat-card'>");
-            writer.println("                <div class='stat-number'>" + (teamProjects / 2) + "</div>");
+            writer.println("                <div class='stat-number'>" + teamProjects + "</div>");
             writer.println("                <div class='stat-label'>Team Projects</div>");
+            writer.println("            </div>");
+            writer.println("            <div class='stat-card'>");
+            writer.println("                <div class='stat-number'>" + tableCount + "</div>");
+            writer.println("                <div class='stat-label'>Table Count</div>");
             writer.println("            </div>");
             writer.println("        </div>");
             
