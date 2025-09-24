@@ -168,6 +168,7 @@ public class ScienceFairTableAssignmentApp {
      * Generates an HTML layout file showing table assignments in a visual table format
      */
     private static void generateHtmlLayout(List<SlotAssignment> assignments, String outputFile) {
+            // ...existing code...
         try (PrintWriter writer = new PrintWriter(new FileWriter(outputFile))) {
             // Group assignments by row
             Map<Integer, List<SlotAssignment>> assignmentsByRow = assignments.stream()
@@ -206,6 +207,7 @@ public class ScienceFairTableAssignmentApp {
             writer.println("        .table-block.team-table { background: #fffde3; }");
             writer.println("        .table-header { background: #e5e7eb; padding: 2px 4px; text-align: center; font-size: 8px; font-weight: 600; color: #495057; border-bottom: 1px solid #dee2e6; position: relative; }");
             writer.println("        .team-table .table-header { background: #fffde3 !important; }");
+            writer.println("        .empty-table .table-header { background: inherit !important; }");
             writer.println("        .team-icon { position: absolute; top: 0px; right: 2px; font-size: 9px; opacity: 0.8; pointer-events: none; z-index: 2; }");
             writer.println("        .table-slots { display: flex; }");
             writer.println("        .empty { background: linear-gradient(135deg, #f7fafc, #edf2f7); color: #a0aec0; border-left: 4px solid #cbd5e0; }");
