@@ -314,16 +314,14 @@ public class ScienceFairTableAssignmentApp {
                     int tableNumber = tableNumbers.get(tableIndex);
                     boolean isTeamTable = false;
                     SlotAssignment assignment1 = rowAssignments.get(slotIndexStart);
+                    SlotAssignment assignment2 = (slotIndexStart + 1 < rowAssignments.size()) ? rowAssignments.get(slotIndexStart + 1) : null;
                     if (assignment1.getIsTeam() != null && assignment1.getIsTeam()) {
                         isTeamTable = true;
                     }
-                    if (slotIndexStart + 1 < rowAssignments.size()) {
-                        SlotAssignment assignment2 = rowAssignments.get(slotIndexStart + 1);
-                        if (assignment2.getIsTeam() != null && assignment2.getIsTeam()) {
-                            isTeamTable = true;
-                        }
+                    if (assignment2 != null && assignment2.getIsTeam() != null && assignment2.getIsTeam()) {
+                        isTeamTable = true;
                     }
-                    boolean isEmptyTable = assignment1.isUnassigned() && (slotIndexStart + 1 >= rowAssignments.size() || rowAssignments.get(slotIndexStart + 1).isUnassigned());
+                    boolean isEmptyTable = assignment1.isUnassigned() && (assignment2 == null || assignment2.isUnassigned());
                     boolean isNonTeamTable = !isTeamTable && !isEmptyTable;
                     writer.println("                <div class='table-block" + (isTeamTable ? " team-table" : "") + (isEmptyTable ? " empty-table" : "") + (isNonTeamTable ? " non-team-table" : "") + "'>");
                     if (isTeamTable) {
@@ -332,14 +330,25 @@ public class ScienceFairTableAssignmentApp {
                     writer.print("<div class='table-header'>Table " + tableNumber);
                     writer.println("</div>");
                     writer.println("                    <div class='table-slots'>");
-                    String slotContent1 = generateSlotContent(assignment1);
-                    String cssClass1 = generateSlotCssClass(assignment1);
-                    writer.println("                        <div class='" + cssClass1 + "'>" + slotContent1 + "</div>");
-                    if (slotIndexStart + 1 < rowAssignments.size()) {
-                        SlotAssignment assignment2 = rowAssignments.get(slotIndexStart + 1);
-                        String slotContent2 = generateSlotContent(assignment2);
-                        String cssClass2 = generateSlotCssClass(assignment2);
-                        writer.println("                        <div class='" + cssClass2 + "'>" + slotContent2 + "</div>");
+                    // For even rows, reverse slot order within table
+                    if (rowNumber % 2 == 0) {
+                        if (assignment2 != null) {
+                            String slotContent2 = generateSlotContent(assignment2);
+                            String cssClass2 = generateSlotCssClass(assignment2);
+                            writer.println("                        <div class='" + cssClass2 + "'>" + slotContent2 + "</div>");
+                        }
+                        String slotContent1 = generateSlotContent(assignment1);
+                        String cssClass1 = generateSlotCssClass(assignment1);
+                        writer.println("                        <div class='" + cssClass1 + "'>" + slotContent1 + "</div>");
+                    } else {
+                        String slotContent1 = generateSlotContent(assignment1);
+                        String cssClass1 = generateSlotCssClass(assignment1);
+                        writer.println("                        <div class='" + cssClass1 + "'>" + slotContent1 + "</div>");
+                        if (assignment2 != null) {
+                            String slotContent2 = generateSlotContent(assignment2);
+                            String cssClass2 = generateSlotCssClass(assignment2);
+                            writer.println("                        <div class='" + cssClass2 + "'>" + slotContent2 + "</div>");
+                        }
                     }
                     writer.println("                    </div>");
                     writer.println("                </div>");
