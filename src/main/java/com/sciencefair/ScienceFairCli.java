@@ -32,10 +32,10 @@ public class ScienceFairCli {
             return;
         }
 
-        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmm").format(new Date());
-        String outDirName = "ScienceFairOutput_" + timestamp;
-        File outDir = new File(outDirName);
-        if (!outDir.exists()) outDir.mkdir();
+    String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    String outDirName = "ScienceFairOutput_" + timestamp;
+    File outDir = new File(outDirName);
+    outDir.mkdir();
 
         String csvOut = outDirName + File.separator + "output.csv";
         String htmlOut = outDirName + File.separator + "output.html";

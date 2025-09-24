@@ -279,9 +279,14 @@ public class ScienceFairAssignmentGui extends JFrame {
     }
     
     private void runAssignment() {
-        String tableSlotsFile = tableSlotsFileField.getText().trim();
-        String projectsFile = projectsFileField.getText().trim();
-            outputFolder = outputFileField.getText().trim();
+    String tableSlotsFile = tableSlotsFileField.getText().trim();
+    String projectsFile = projectsFileField.getText().trim();
+    // Create a new timestamped output folder for each run
+    String jarPath = new File(System.getProperty("java.class.path")).getAbsoluteFile().getParent();
+    String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+    outputFolder = jarPath + File.separator + "ScienceFairOutput_" + timestamp;
+    new File(outputFolder).mkdirs();
+    outputFileField.setText(outputFolder);
     String outputFile = outputFolder + File.separator + "output.csv";
         
         // Validate inputs
