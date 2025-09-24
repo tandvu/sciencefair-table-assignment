@@ -15,6 +15,8 @@ A Java-based standalone application for automatically assigning science fair pro
   - GUI mode for easy file selection
   - Command-line mode for automated processing
 
+- **Persistent Input File Paths**: Remembers the last-used Table Slots and Projects CSV file paths. Use the "Use Previous Input Files" button in the GUI to quickly restore them after restarting the app.
+
 - **Cross-Platform**: Runs on macOS 26+, Windows, and Linux with Java 11+
 
 ## Requirements
