@@ -191,8 +191,11 @@ public class ScienceFairTableAssignmentApp {
             writer.println("        table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 11px; background: white; border-radius: 12px; overflow: hidden; }");
             writer.println("        .row-label { background: linear-gradient(135deg, #4a5568, #2d3748); color: white; padding: 12px 16px; font-weight: 600; text-align: center; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); min-width: 60px; }");
             writer.println("        .slot { border: none; padding: 4px 2px; text-align: center; min-width: 60px; font-weight: 500; position: relative; font-size: 9px; }");
-            writer.println("        .table-block { display: inline-block; margin: 0 3px 4px 0; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }");
-            writer.println("        .table-header { background: #f8f9fa; padding: 2px 4px; text-align: center; font-size: 8px; font-weight: 600; color: #495057; border-bottom: 1px solid #dee2e6; }");
+            writer.println("        .table-block { display: inline-block; margin: 0 3px 4px 0; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); background: #fffbe6; position: relative; }");
+            writer.println("        .table-block.team-table { background: #fffde3; }");
+            writer.println("        .table-header { background: #e5e7eb; padding: 2px 4px; text-align: center; font-size: 8px; font-weight: 600; color: #495057; border-bottom: 1px solid #dee2e6; position: relative; }");
+            writer.println("        .team-table .table-header { background: #fffde3 !important; }");
+            writer.println("        .team-icon { position: absolute; top: 0px; right: 2px; font-size: 9px; opacity: 0.8; pointer-events: none; z-index: 2; }");
             writer.println("        .table-slots { display: flex; }");
             writer.println("        .empty { background: linear-gradient(135deg, #f7fafc, #edf2f7); color: #a0aec0; border-left: 4px solid #cbd5e0; }");
             writer.println("        .anim { background: linear-gradient(135deg, #f0fff4, #c6f6d5); color: #22543d; border-left: 4px solid #38a169; }");
@@ -287,25 +290,33 @@ public class ScienceFairTableAssignmentApp {
                     int tableIndex = visualIndex;
                     int slotIndexStart = tableIndex * 2;
                     int tableNumber = tableNumbers.get(tableIndex);
-                    
-                    writer.println("                <div class='table-block'>");
-                    writer.println("                    <div class='table-header'>Table " + tableNumber + "</div>");
-                    writer.println("                    <div class='table-slots'>");
-                    
-                    // First slot
+                    boolean isTeamTable = false;
                     SlotAssignment assignment1 = rowAssignments.get(slotIndexStart);
+                    if (assignment1.getIsTeam() != null && assignment1.getIsTeam()) {
+                        isTeamTable = true;
+                    }
+                    if (slotIndexStart + 1 < rowAssignments.size()) {
+                        SlotAssignment assignment2 = rowAssignments.get(slotIndexStart + 1);
+                        if (assignment2.getIsTeam() != null && assignment2.getIsTeam()) {
+                            isTeamTable = true;
+                        }
+                    }
+                    writer.println("                <div class='table-block" + (isTeamTable ? " team-table" : "") + "'>");
+                    if (isTeamTable) {
+                        writer.print("<span class='team-icon' title='Team Project'>👥</span>");
+                    }
+                    writer.print("<div class='table-header'>Table " + tableNumber);
+                    writer.println("</div>");
+                    writer.println("                    <div class='table-slots'>");
                     String slotContent1 = generateSlotContent(assignment1);
                     String cssClass1 = generateSlotCssClass(assignment1);
                     writer.println("                        <div class='" + cssClass1 + "'>" + slotContent1 + "</div>");
-                    
-                    // Second slot (if exists)
                     if (slotIndexStart + 1 < rowAssignments.size()) {
                         SlotAssignment assignment2 = rowAssignments.get(slotIndexStart + 1);
                         String slotContent2 = generateSlotContent(assignment2);
                         String cssClass2 = generateSlotCssClass(assignment2);
                         writer.println("                        <div class='" + cssClass2 + "'>" + slotContent2 + "</div>");
                     }
-                    
                     writer.println("                    </div>");
                     writer.println("                </div>");
                 }
@@ -318,13 +329,22 @@ public class ScienceFairTableAssignmentApp {
             writer.println("        <div class='legend'>");
             writer.println("            <h3>🧬 Category Legend</h3>");
             writer.println("            <table class='legend-table'>");
-            writer.println("                <tr><td class='slot anim legend-sample'></td><td><strong>Animal Sciences</strong> (Anim)</td></tr>");
-            writer.println("                <tr><td class='slot behv legend-sample'></td><td><strong>Behavioral and Social Sciences</strong> (Behv)</td></tr>");
-            writer.println("                <tr><td class='slot bioc legend-sample'></td><td><strong>Biochemistry</strong> (Bioc)</td></tr>");
-            writer.println("                <tr><td class='slot biom legend-sample'></td><td><strong>Biomedical/Health Sciences</strong> (Biom)</td></tr>");
-            writer.println("                <tr><td class='slot cell legend-sample'></td><td><strong>Cellular and Molecular Biology</strong> (Cell)</td></tr>");
-            writer.println("                <tr><td class='slot chem legend-sample'></td><td><strong>Chemistry</strong> (Chem)</td></tr>");
-            writer.println("                <tr><td class='slot comp legend-sample'></td><td><strong>Computational Biology</strong> (Comp)</td></tr>");
+            writer.println("                <tr><td class='slot anim legend-sample'></td><td><strong>Animal Sciences</strong> (ANIM)</td></tr>");
+            writer.println("                <tr><td class='slot behv legend-sample'></td><td><strong>Behavioral and Social Sciences</strong> (BEHA)</td></tr>");
+            writer.println("                <tr><td class='slot bchm legend-sample'></td><td><strong>Biochemistry</strong> (BCHM)</td></tr>");
+            writer.println("                <tr><td class='slot bmed legend-sample'></td><td><strong>Biomedical/Health Sciences, and Biomedical Engineering</strong> (BMED)</td></tr>");
+            writer.println("                <tr><td class='slot cell legend-sample'></td><td><strong>Cellular and Molecular Biology</strong> (CELL)</td></tr>");
+            writer.println("                <tr><td class='slot chem legend-sample'></td><td><strong>Chemistry</strong> (CHEM)</td></tr>");
+            writer.println("                <tr><td class='slot cbio legend-sample'></td><td><strong>Computational Biology and Bioinformatics</strong> (CBIO)</td></tr>");
+            writer.println("                <tr><td class='slot comp legend-sample'></td><td><strong>Computer Science and Systems Software</strong> (COMP)</td></tr>");
+            writer.println("                <tr><td class='slot eaev legend-sample'></td><td><strong>Earth and Environmental Sciences</strong> (EAEV)</td></tr>");
+            writer.println("                <tr><td class='slot eemr legend-sample'></td><td><strong>Engineering: Electrical, Mechanical, and Robotics</strong> (EEMR)</td></tr>");
+            writer.println("                <tr><td class='slot eemt legend-sample'></td><td><strong>Engineering: Energy, Materials, and Transport</strong> (EEMT)</td></tr>");
+            writer.println("                <tr><td class='slot math legend-sample'></td><td><strong>Mathematics</strong> (MATH)</td></tr>");
+            writer.println("                <tr><td class='slot mcro legend-sample'></td><td><strong>Microbiology</strong> (MCRO)</td></tr>");
+            writer.println("                <tr><td class='slot phys legend-sample'></td><td><strong>Physics and Astronomy</strong> (PHYS)</td></tr>");
+            writer.println("                <tr><td class='slot plnt legend-sample'></td><td><strong>Plant Sciences</strong> (PLNT)</td></tr>");
+            writer.println("                <tr><td class='slot prod legend-sample'></td><td><strong>Product Testing</strong> (PROD)</td></tr>");
             writer.println("                <tr><td class='slot empty legend-sample'>EMPTY</td><td><strong>Reserved or unassigned slot</strong></td></tr>");
             writer.println("            </table>");
             writer.println("            <p><strong>💡 Note:</strong> T### = Table Number (snake flow), P### = Project ID. Team projects are marked with 👥 icon and double border.</p>");
@@ -391,18 +411,27 @@ public class ScienceFairTableAssignmentApp {
             
             writer.println();
             writer.println("Legend:");
-            writer.println("  [123-Anim           ] = Individual project 123 (Animal Sciences)");
-            writer.println("  [123-Behv---123-Behv] = Team project 123 (Behavioral Sciences, spans 2 slots)");
+            writer.println("  [123-ANIM           ] = Individual project 123 (Animal Sciences)");
+            writer.println("  [123-BEHA---123-BEHA] = Team project 123 (Behavioral and Social Sciences, spans 2 slots)");
             writer.println("  [EMPTY              ] = Reserved or unassigned slot");
             writer.println();
             writer.println("Category Abbreviations:");
-            writer.println("  Anim = Animal Sciences");
-            writer.println("  Behv = Behavioral and Social Sciences");
-            writer.println("  Bioc = Biochemistry");
-            writer.println("  Biom = Biomedical/Health Sciences, and Biomedical Engineering");
-            writer.println("  Cell = Cellular and Molecular Biology");
-            writer.println("  Chem = Chemistry");
-            writer.println("  Comp = Computational Biology and Bioinformatics");
+            writer.println("  ANIM = Animal Sciences");
+            writer.println("  BEHA = Behavioral and Social Sciences");
+            writer.println("  BCHM = Biochemistry");
+            writer.println("  BMED = Biomedical/Health Sciences, and Biomedical Engineering");
+            writer.println("  CELL = Cellular and Molecular Biology");
+            writer.println("  CHEM = Chemistry");
+            writer.println("  CBIO = Computational Biology and Bioinformatics");
+            writer.println("  COMP = Computer Science and Systems Software");
+            writer.println("  EAEV = Earth and Environmental Sciences");
+            writer.println("  EEMR = Engineering: Electrical, Mechanical, and Robotics");
+            writer.println("  EEMT = Engineering: Energy, Materials, and Transport");
+            writer.println("  MATH = Mathematics");
+            writer.println("  MCRO = Microbiology");
+            writer.println("  PHYS = Physics and Astronomy");
+            writer.println("  PLNT = Plant Sciences");
+            writer.println("  PROD = Product Testing");
             
         } catch (IOException e) {
             System.err.println("Error writing visual layout file: " + e.getMessage());
@@ -413,18 +442,29 @@ public class ScienceFairTableAssignmentApp {
      * Creates abbreviated category names for the visual layout
      */
     private static String getCategoryAbbreviation(String category) {
-        if (category == null) return "Unkn";
-        
-        if (category.contains("Animal")) return "Anim";
-        if (category.contains("Behavioral")) return "Behv";
-        if (category.contains("Biochemistry")) return "Bioc";
-        if (category.contains("Biomedical") || category.contains("Health")) return "Biom";
-        if (category.contains("Cellular") || category.contains("Molecular")) return "Cell";
-        if (category.contains("Chemistry") && !category.contains("Biochemistry")) return "Chem";
-        if (category.contains("Computational")) return "Comp";
-        
-        // Fallback: use first 4 characters
-        return category.length() >= 4 ? category.substring(0, 4) : category;
+        if (category == null) return "UNKN";
+        Map<String, String> lookup = new HashMap<>();
+        lookup.put("Animal Sciences", "ANIM");
+        lookup.put("Behavioral and Social Sciences", "BEHA");
+        lookup.put("Biochemistry", "BCHM");
+        lookup.put("Biomedical/Health Sciences, and Biomedical Engineering", "BMED");
+        lookup.put("Cellular and Molecular Biology", "CELL");
+        lookup.put("Chemistry", "CHEM");
+        lookup.put("Computational Biology and Bioinformatics", "CBIO");
+        lookup.put("Computer Science and Systems Software", "COMP");
+        lookup.put("Earth and Environmental Sciences", "EAEV");
+        lookup.put("Engineering: Electrical, Mechanical, and Robotics", "EEMR");
+        lookup.put("Engineering: Energy, Materials, and Transport", "EEMT");
+        lookup.put("Mathematics", "MATH");
+        lookup.put("Microbiology", "MCRO");
+        lookup.put("Physics and Astronomy", "PHYS");
+        lookup.put("Plant Sciences", "PLNT");
+        lookup.put("Product Testing", "PROD");
+        if (lookup.containsKey(category)) return lookup.get(category);
+        for (Map.Entry<String, String> entry : lookup.entrySet()) {
+            if (category != null && category.contains(entry.getKey())) return entry.getValue();
+        }
+        return category.length() >= 4 ? category.substring(0, 4).toUpperCase() : category;
     }
     
     /**
@@ -443,10 +483,8 @@ public class ScienceFairTableAssignmentApp {
         for (int row = 1; row < currentRow; row++) {
             cumulativeTablesBefore += rowTableCounts.getOrDefault(row, 0);
         }
-        
-        // Calculate the actual table number based on snake flow pattern
-        int tableNumber = 101 + cumulativeTablesBefore + (tablePosition - 1);
-        
+        // Table numbers now start at 1 and increment by 1 for each table
+        int tableNumber = 1 + cumulativeTablesBefore + (tablePosition - 1);
         return tableNumber;
     }
     
@@ -470,19 +508,35 @@ public class ScienceFairTableAssignmentApp {
      */
     private static String generateSlotCssClass(SlotAssignment assignment) {
         String cssClass = "slot ";
-        
         if (!assignment.isUnassigned() && assignment.getProjectID() != null) {
             String category = assignment.getCategory();
             String categoryAbbrev = getCategoryAbbreviation(category);
-            cssClass += categoryAbbrev.toLowerCase();
-            
+            // Map official code to CSS class
+            Map<String, String> codeToCss = new HashMap<>();
+            codeToCss.put("ANIM", "anim");
+            codeToCss.put("BEHA", "behv");
+            codeToCss.put("BCHM", "bioc");
+            codeToCss.put("BMED", "biom");
+            codeToCss.put("CELL", "cell");
+            codeToCss.put("CHEM", "chem");
+            codeToCss.put("CBIO", "comp");
+            codeToCss.put("COMP", "comp");
+            codeToCss.put("EAEV", "eaev");
+            codeToCss.put("EEMR", "eemr");
+            codeToCss.put("EEMT", "eemt");
+            codeToCss.put("MATH", "math");
+            codeToCss.put("MCRO", "mcro");
+            codeToCss.put("PHYS", "phys");
+            codeToCss.put("PLNT", "plnt");
+            codeToCss.put("PROD", "prod");
+            String cssCat = codeToCss.getOrDefault(categoryAbbrev, "empty");
+            cssClass += cssCat;
             if (assignment.getIsTeam() != null && assignment.getIsTeam()) {
                 cssClass += " team";
             }
         } else {
             cssClass += "empty";
         }
-        
         return cssClass;
     }
 }
