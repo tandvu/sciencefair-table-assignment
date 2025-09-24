@@ -184,28 +184,32 @@ public class ScienceFairAssignmentGui extends JFrame {
         openHtmlButton.setEnabled(false);
         openFolderButton.setEnabled(false);
 
-        StringBuilder log = new StringBuilder();
+        resultArea.setText("");
+        // Table Slots file status
         if (tableSlotsFileField.getText().trim().isEmpty()) {
-            log.append("Table Slots file: Not selected.\n");
+            appendColoredText("Table Slots file: Not selected.\n", Color.WHITE);
         } else if (!validTables) {
-            log.append("Table Slots file: Invalid format.\n");
+            appendColoredText("Table Slots file: ", Color.WHITE);
+            appendColoredText("Invalid format.\n", Color.RED);
         } else {
-            log.append("Table Slots file: Valid.\n");
+            appendColoredText("Table Slots file: ", Color.WHITE);
+            appendColoredText("Valid.\n", Color.GREEN);
         }
 
+        // Projects file status
         if (projectsFileField.getText().trim().isEmpty()) {
-            log.append("Projects file: Not selected.\n");
+            appendColoredText("Projects file: Not selected.\n", Color.WHITE);
         } else if (!validProjects) {
-            log.append("Projects file: Invalid format.\n");
+            appendColoredText("Projects file: ", Color.WHITE);
+            appendColoredText("Invalid format.\n", Color.RED);
         } else {
-            log.append("Projects file: Valid.\n");
+            appendColoredText("Projects file: ", Color.WHITE);
+            appendColoredText("Valid.\n", Color.GREEN);
         }
 
         if (enable) {
-            log.append("Both files are valid. Click 'Assign Projects to Table Slots' to continue.\n");
+            appendColoredText("Both files are valid. Click 'Assign Projects to Table Slots' to continue.\n", Color.GREEN);
         }
-        
-        setStyledText(log.toString(), Color.WHITE);
     }
 
     // Check if table slots file has required headers
