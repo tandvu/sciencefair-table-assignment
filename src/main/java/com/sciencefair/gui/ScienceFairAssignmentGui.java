@@ -21,6 +21,7 @@ import java.util.List;
  */
 public class ScienceFairAssignmentGui extends JFrame {
     private JButton openFolderButton;
+    private JButton usePreviousBtn;
     private String outputFolder;
 
     private JTextField tableSlotsFileField;
@@ -37,10 +38,20 @@ public class ScienceFairAssignmentGui extends JFrame {
     private static final String PREF_PROJECTS_DIR = "lastProjectsDir";
     
     public ScienceFairAssignmentGui() {
-    this.assignmentService = new ScienceFairAssignmentService();
-    initializeComponents();
-    setupLayout();
-    setupEventHandlers();
+        this.assignmentService = new ScienceFairAssignmentService();
+        initializeComponents();
+        setupLayout();
+        setupEventHandlers();
+        // Enable/disable Use Previous Input Files button based on saved paths
+        boolean hasPrevTable = !prefs.get("lastTableSlotsFile", "").isEmpty();
+        boolean hasPrevProjects = !prefs.get("lastProjectsFile", "").isEmpty();
+        if (usePreviousBtn != null) {
+            usePreviousBtn.setEnabled(hasPrevTable || hasPrevProjects);
+        }
+        this.assignmentService = new ScienceFairAssignmentService();
+        initializeComponents();
+        setupLayout();
+        setupEventHandlers();
         // Set default output location to JAR directory, timestamped folder
         String jarPath = new File(System.getProperty("java.class.path")).getAbsoluteFile().getParent();
         String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
@@ -127,9 +138,23 @@ public class ScienceFairAssignmentGui extends JFrame {
         
     // Button row: all buttons aligned to the far right
     JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+    usePreviousBtn = new JButton("Use Previous Input Files");
+    buttonPanel.add(usePreviousBtn);
     buttonPanel.add(openHtmlButton);
     buttonPanel.add(openFolderButton);
     buttonPanel.add(runButton);
+        // Use Previous Input Files button handler
+        usePreviousBtn.addActionListener(e -> {
+            String lastTableFile = prefs.get("lastTableSlotsFile", "");
+            String lastProjectsFile = prefs.get("lastProjectsFile", "");
+            if (!lastTableFile.isEmpty()) {
+                tableSlotsFileField.setText(lastTableFile);
+            }
+            if (!lastProjectsFile.isEmpty()) {
+                projectsFileField.setText(lastProjectsFile);
+            }
+            validateInputs();
+        });
     gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 4; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.anchor = GridBagConstraints.EAST; gbc.insets = new Insets(15, 0, 10, 0);
     inputPanel.add(buttonPanel, gbc);
         
@@ -288,8 +313,10 @@ public class ScienceFairAssignmentGui extends JFrame {
             String selectedDir = selectedFile.getParent();
             if (textField == tableSlotsFileField) {
                 prefs.put(PREF_TABLES_DIR, selectedDir);
+                prefs.put("lastTableSlotsFile", selectedFile.getAbsolutePath());
             } else if (textField == projectsFileField) {
                 prefs.put(PREF_PROJECTS_DIR, selectedDir);
+                prefs.put("lastProjectsFile", selectedFile.getAbsolutePath());
             }
         }
     }
