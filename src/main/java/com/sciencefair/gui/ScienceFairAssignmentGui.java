@@ -22,7 +22,7 @@ import java.util.List;
 public class ScienceFairAssignmentGui extends JFrame {
     private JButton openFolderButton;
     private String outputFolder;
-    
+
     private JTextField tableSlotsFileField;
     private JTextField projectsFileField;
     private JTextField outputFileField;
@@ -30,6 +30,11 @@ public class ScienceFairAssignmentGui extends JFrame {
     private JButton openHtmlButton;
     private JTextPane resultArea;
     private ScienceFairAssignmentService assignmentService;
+
+    // Preferences for remembering last-used directories
+    private final java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(ScienceFairAssignmentGui.class);
+    private static final String PREF_TABLES_DIR = "lastTableSlotsDir";
+    private static final String PREF_PROJECTS_DIR = "lastProjectsDir";
     
     public ScienceFairAssignmentGui() {
     this.assignmentService = new ScienceFairAssignmentService();
@@ -236,25 +241,40 @@ public class ScienceFairAssignmentGui extends JFrame {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(title);
         fileChooser.setFileFilter(new FileNameExtensionFilter("CSV Files", "csv"));
-        // Set default directory to the other file's location if available, else JAR location
+
+        // Set default directory from preferences if available
         try {
-            String otherPath = null;
-            if (textField == projectsFileField && tableSlotsFileField.getText() != null && !tableSlotsFileField.getText().isEmpty()) {
-                otherPath = tableSlotsFileField.getText();
-            } else if (textField == tableSlotsFileField && projectsFileField.getText() != null && !projectsFileField.getText().isEmpty()) {
-                otherPath = projectsFileField.getText();
+            String prefDir = null;
+            if (textField == tableSlotsFileField) {
+                prefDir = prefs.get(PREF_TABLES_DIR, null);
+            } else if (textField == projectsFileField) {
+                prefDir = prefs.get(PREF_PROJECTS_DIR, null);
             }
-            if (otherPath != null) {
-                File otherFile = new File(otherPath);
-                File parentDir = otherFile.getParentFile();
-                if (parentDir != null && parentDir.exists()) {
-                    fileChooser.setCurrentDirectory(parentDir);
+            if (prefDir != null) {
+                File dir = new File(prefDir);
+                if (dir.exists() && dir.isDirectory()) {
+                    fileChooser.setCurrentDirectory(dir);
                 }
             } else {
-                String jarPath = ScienceFairAssignmentGui.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-                File jarDir = new File(jarPath).getParentFile();
-                if (jarDir != null && jarDir.exists()) {
-                    fileChooser.setCurrentDirectory(jarDir);
+                // fallback: use other file's location if available
+                String otherPath = null;
+                if (textField == projectsFileField && tableSlotsFileField.getText() != null && !tableSlotsFileField.getText().isEmpty()) {
+                    otherPath = tableSlotsFileField.getText();
+                } else if (textField == tableSlotsFileField && projectsFileField.getText() != null && !projectsFileField.getText().isEmpty()) {
+                    otherPath = projectsFileField.getText();
+                }
+                if (otherPath != null) {
+                    File otherFile = new File(otherPath);
+                    File parentDir = otherFile.getParentFile();
+                    if (parentDir != null && parentDir.exists()) {
+                        fileChooser.setCurrentDirectory(parentDir);
+                    }
+                } else {
+                    String jarPath = ScienceFairAssignmentGui.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+                    File jarDir = new File(jarPath).getParentFile();
+                    if (jarDir != null && jarDir.exists()) {
+                        fileChooser.setCurrentDirectory(jarDir);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -262,7 +282,15 @@ public class ScienceFairAssignmentGui extends JFrame {
         }
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
-            textField.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            File selectedFile = fileChooser.getSelectedFile();
+            textField.setText(selectedFile.getAbsolutePath());
+            // Save the directory to preferences
+            String selectedDir = selectedFile.getParent();
+            if (textField == tableSlotsFileField) {
+                prefs.put(PREF_TABLES_DIR, selectedDir);
+            } else if (textField == projectsFileField) {
+                prefs.put(PREF_PROJECTS_DIR, selectedDir);
+            }
         }
     }
     
