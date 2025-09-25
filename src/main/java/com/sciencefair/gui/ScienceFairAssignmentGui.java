@@ -22,7 +22,10 @@ import java.util.List;
 public class ScienceFairAssignmentGui extends JFrame {
     private JButton openFolderButton;
     private JButton usePreviousBtn;
+    // Retry button removed
     private String outputFolder;
+    // Removed lastSuccessfulOutputFolder persistence
+    // Removed reuse/fixed latest output folder checkboxes per user request
 
     private JTextField tableSlotsFileField;
     private JTextField projectsFileField;
@@ -48,16 +51,9 @@ public class ScienceFairAssignmentGui extends JFrame {
         if (usePreviousBtn != null) {
             usePreviousBtn.setEnabled(hasPrevTable || hasPrevProjects);
         }
-        this.assignmentService = new ScienceFairAssignmentService();
-        initializeComponents();
-        setupLayout();
-        setupEventHandlers();
-        // Set default output location to JAR directory, timestamped folder
-        String jarPath = new File(System.getProperty("java.class.path")).getAbsoluteFile().getParent();
-        String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
-        outputFolder = jarPath + File.separator + "ScienceFairOutput_" + timestamp;
-        new File(outputFolder).mkdirs();
-        outputFileField.setText(outputFolder);
+        // Defer output folder creation until runAssignment; keep placeholder
+        outputFolder = null;
+        outputFileField.setText("(will be created on run)");
     }
     
     private void initializeComponents() {
@@ -136,6 +132,8 @@ public class ScienceFairAssignmentGui extends JFrame {
         
     // Output folder row removed
         
+    // (Removed options panel for output folder strategies)
+
     // Button row: all buttons aligned to the far right
     JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
     usePreviousBtn = new JButton("Use Previous Input Files");
@@ -190,6 +188,7 @@ public class ScienceFairAssignmentGui extends JFrame {
                 openFile(outputFolder);
             }
         });
+    // Retry button removed
 
         // Validate input files whenever they are changed
         tableSlotsFileField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
@@ -340,13 +339,7 @@ public class ScienceFairAssignmentGui extends JFrame {
     private void runAssignment() {
     String tableSlotsFile = tableSlotsFileField.getText().trim();
     String projectsFile = projectsFileField.getText().trim();
-    // Create a new timestamped output folder for each run
-    String jarPath = new File(System.getProperty("java.class.path")).getAbsoluteFile().getParent();
-    String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
-    outputFolder = jarPath + File.separator + "ScienceFairOutput_" + timestamp;
-    new File(outputFolder).mkdirs();
-    outputFileField.setText(outputFolder);
-    String outputFile = outputFolder + File.separator + "output.csv";
+    // Output folder will be created only after successful assignment
         
         // Validate inputs
         if (tableSlotsFile.isEmpty() || projectsFile.isEmpty()) {
@@ -361,8 +354,7 @@ public class ScienceFairAssignmentGui extends JFrame {
             showError("Projects file does not exist: " + projectsFile);
             return;
         }
-        // Always create output folder if missing
-        new File(outputFolder).mkdirs();
+    // Output folder will be selected and created after successful assignment processing
         
     // Disable buttons during processing
     runButton.setEnabled(false);
@@ -385,9 +377,17 @@ public class ScienceFairAssignmentGui extends JFrame {
                     publish("Running assignment algorithm...");
                     List<SlotAssignment> assignments = assignmentService.assignProjectsToSlots(projects, tableSlots);
                     
+                    // Always create a fresh timestamped output folder
+                    String jarPath = new File(System.getProperty("java.class.path")).getAbsoluteFile().getParent();
+                    String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+                    outputFolder = jarPath + File.separator + "ScienceFairOutput_" + timestamp;
+                    File outDir = new File(outputFolder);
+                    if (!outDir.exists()) {
+                        outDir.mkdirs();
+                    }
+                    String outputFile = outputFolder + File.separator + "output.csv";
                     publish("Writing results to: " + outputFile);
                     ScienceFairCsvUtil.writeSlotAssignments(assignments, outputFile);
-                    // Also generate output.html in same folder
                     String htmlFile = outputFolder + File.separator + "output.html";
                     com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayoutFromCsv(outputFile, htmlFile);
                     publish("HTML results saved to: " + htmlFile);
@@ -420,8 +420,15 @@ public class ScienceFairAssignmentGui extends JFrame {
             @Override
             protected void done() {
                 runButton.setEnabled(true);
-                openHtmlButton.setEnabled(true);
+                if (outputFolder != null) {
+                    outputFileField.setText(outputFolder);
+                    openHtmlButton.setEnabled(true);
                     openFolderButton.setEnabled(true);
+                    // No persistence of last output folder per updated requirement
+                } else {
+                    openHtmlButton.setEnabled(false);
+                    openFolderButton.setEnabled(false);
+                }
             }
         };
         
