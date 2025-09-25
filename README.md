@@ -4,12 +4,10 @@ A Java-based standalone application for automatically assigning science fair pro
 
 ## Features
 
-- **Smart Assignment Algorithm**: Assigns projects to tables based on:
-  - Space requirements
-  - Electricity and water needs
-  - Category matching
-  - Grade-level appropriateness
-  - Special requirements
+**Smart Assignment Algorithm**: Assigns projects to table slots in numerical order by ProjectID and category from Input CSV #2, from SR-ANIM through JR-PROD, *except* when a table slot is left empty because it is:
+   1. marked as reserved in Input CSV #1, OR
+   2. even-numbered within its row AND the next project to assign is a team project, in order to subsequently assign that team project to a full table (in the current row, or the next row if the current row is full), OR
+   3. the next project to assign will be the first in its category, except when starting a new row (table slot 1)
 
 - **Dual Interface**: 
   - GUI mode for easy file selection

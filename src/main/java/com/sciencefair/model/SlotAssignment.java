@@ -10,26 +10,39 @@ public class SlotAssignment {
     private Integer projectID; // Nullable for unassigned slots
     private Boolean isTeam; // Nullable for unassigned slots
     private String category; // Nullable for unassigned slots
+    private boolean reserved; // True if this slot is reserved in TableSlot
     
     public SlotAssignment() {}
     
     public SlotAssignment(int row, int tableSlotID) {
+        this(row, tableSlotID, true);
+    }
+
+    public SlotAssignment(int row, int tableSlotID, boolean reserved) {
         this.row = row;
         this.tableSlotID = tableSlotID;
         this.isUnassigned = true;
         this.projectID = null;
         this.isTeam = null;
         this.category = null;
+        this.reserved = reserved;
     }
     
     public SlotAssignment(int row, int tableSlotID, ScienceProject project) {
+        this(row, tableSlotID, false, project);
+    }
+
+    public SlotAssignment(int row, int tableSlotID, boolean reserved, ScienceProject project) {
         this.row = row;
         this.tableSlotID = tableSlotID;
         this.isUnassigned = false;
         this.projectID = project.getProjectID();
         this.isTeam = project.isTeam();
         this.category = project.getCategory();
+        this.reserved = reserved;
     }
+    public boolean isReserved() { return reserved; }
+    public void setReserved(boolean reserved) { this.reserved = reserved; }
     
     // Getters and Setters
     public int getRow() { return row; }

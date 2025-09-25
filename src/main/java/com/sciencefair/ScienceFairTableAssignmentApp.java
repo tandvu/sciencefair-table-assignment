@@ -533,6 +533,8 @@ public class ScienceFairTableAssignmentApp {
             String categoryAbbrev = getCategoryAbbreviation(category);
             String label = division + "-" + categoryAbbrev;
             return "<strong>P" + projectID + "</strong><br><small>" + label + "</small>";
+        } else if (assignment.isReserved()) {
+            return "<strong>RSRVD</strong>";
         } else {
             return "<strong>EMPTY</strong>";
         }
@@ -569,6 +571,8 @@ public class ScienceFairTableAssignmentApp {
             if (assignment.getIsTeam() != null && assignment.getIsTeam()) {
                 cssClass += " team";
             }
+        } else if (assignment.isReserved()) {
+            cssClass += "empty reserved";
         } else {
             cssClass += "empty";
         }

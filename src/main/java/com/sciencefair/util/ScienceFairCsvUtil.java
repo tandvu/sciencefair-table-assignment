@@ -36,6 +36,8 @@ public class ScienceFairCsvUtil {
                 String isTeamStr = csvRecord.get("isTeam");
                 assignment.setIsTeam((isTeamStr != null && !isTeamStr.isEmpty()) ? parseBoolean(isTeamStr) : null);
                 assignment.setCategory(csvRecord.get("Category"));
+                String reservedStr = csvRecord.isMapped("reserved") ? csvRecord.get("reserved") : null;
+                assignment.setReserved((reservedStr != null && !reservedStr.isEmpty()) ? parseBoolean(reservedStr) : false);
                 assignments.add(assignment);
             }
         }
@@ -97,7 +99,7 @@ public class ScienceFairCsvUtil {
     public static void writeSlotAssignments(List<SlotAssignment> assignments, String filePath) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(filePath));
              CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(
-                 "Row", "tableSlotID", "isUnassigned", "projectID", "isTeam", "Category"))) {
+                 "Row", "tableSlotID", "isUnassigned", "projectID", "isTeam", "Category", "reserved"))) {
             
             for (SlotAssignment assignment : assignments) {
                 csvPrinter.printRecord(
@@ -106,7 +108,8 @@ public class ScienceFairCsvUtil {
                     assignment.isUnassigned() ? "TRUE" : "FALSE",
                     assignment.getProjectID() != null ? assignment.getProjectID().toString() : "",
                     assignment.getIsTeam() != null ? (assignment.getIsTeam() ? "TRUE" : "FALSE") : "",
-                    assignment.getCategory() != null ? assignment.getCategory() : ""
+                    assignment.getCategory() != null ? assignment.getCategory() : "",
+                    assignment.isReserved() ? "TRUE" : "FALSE"
                 );
             }
         }

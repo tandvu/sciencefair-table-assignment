@@ -43,13 +43,13 @@ public class ScienceFairAssignmentService {
             
             // Rule 1: currentSlot is reserved in Input CSV #1
             if (tableSlot.isReserved()) {
-                assignments.add(new SlotAssignment(currentRow, currentSlot));
+                assignments.add(new SlotAssignment(currentRow, currentSlot, true));
                 continue; // go to next table slot iteration
             }
             
             // Check if we still have projects to assign
             if (currentProjectIndex >= projects.size()) {
-                assignments.add(new SlotAssignment(currentRow, currentSlot));
+                assignments.add(new SlotAssignment(currentRow, currentSlot, false));
                 continue;
             }
             
@@ -58,34 +58,53 @@ public class ScienceFairAssignmentService {
             
             // Rule 2: currentProject is a team project, AND currentSlot is the last slot in a row
             if (currentProject.isTeam() && currentSlot == rowNumSlots) {
-                assignments.add(new SlotAssignment(currentRow, currentSlot));
+                assignments.add(new SlotAssignment(currentRow, currentSlot, false));
                 continue; // go to next table slot iteration (don't assign project)
             }
             
             // Rule 3: currentProject is the first in its category AND currentSlot is not slot #1 in a row
             // AND the last category didn't end at a row end AND we haven't used category spacing yet
             if (currentProject.isFirstInCat() && currentSlot > 1 && !lastCategoryEndedAtRowEnd && !categorySpacingUsed) {
-                assignments.add(new SlotAssignment(currentRow, currentSlot));
+                assignments.add(new SlotAssignment(currentRow, currentSlot, false));
                 categorySpacingUsed = true; // Mark that we've used the category spacing for this category
                 continue; // go to next table slot iteration (don't assign project, try again on next slot)
             }
             
             // Rule 4: currentProject is a team project AND currentSlot is even-numbered
             if (currentProject.isTeam() && (currentSlot % 2 == 0)) {
-                assignments.add(new SlotAssignment(currentRow, currentSlot));
+                assignments.add(new SlotAssignment(currentRow, currentSlot, false));
                 continue; // go to next table slot iteration (don't assign project)
             }
             
             // If we've gotten to this point, we have a valid assignment
             if (currentProject.isTeam()) {
+                // Additional rule: team projects require two consecutive AVAILABLE (non-reserved) slots.
+                // If the next slot is reserved or doesn't exist, leave this slot empty and try again next iteration.
+                if (slotIndex + 1 >= sortedSlots.size()) {
+                    // No second slot available
+                    assignments.add(new SlotAssignment(currentRow, currentSlot, false));
+                    continue;
+                }
+                TableSlot prospectiveSecond = sortedSlots.get(slotIndex + 1);
+                if (prospectiveSecond.getRow() != currentRow) {
+                    // Next slot rolls into next row; cannot place team project starting here
+                    assignments.add(new SlotAssignment(currentRow, currentSlot, false));
+                    continue;
+                }
+                if (prospectiveSecond.isReserved()) {
+                    // Second slot reserved - preserve both slots (this one and reserved next) as unassigned for this team
+                    assignments.add(new SlotAssignment(currentRow, currentSlot, false));
+                    // Do not advance project index; project will attempt placement again at a later slot
+                    continue;
+                }
                 // Team projects get two slots
-                assignments.add(new SlotAssignment(currentRow, currentSlot, currentProject));
+                assignments.add(new SlotAssignment(currentRow, currentSlot, false, currentProject));
                 
                 // Check if we have a next slot for the second part of the team project
                 if (slotIndex + 1 < sortedSlots.size()) {
                     slotIndex++; // move to next slot
                     TableSlot nextSlot = sortedSlots.get(slotIndex);
-                    assignments.add(new SlotAssignment(nextSlot.getRow(), nextSlot.getTableSlotID(), currentProject));
+                    assignments.add(new SlotAssignment(nextSlot.getRow(), nextSlot.getTableSlotID(), false, currentProject));
                     
                     // Check if this team project ended at row end
                     lastCategoryEndedAtRowEnd = (nextSlot.getTableSlotID() == getRowNumSlots(nextSlot.getRow()));
@@ -95,7 +114,7 @@ public class ScienceFairAssignmentService {
                 currentProjectIndex++;
             } else {
                 // Solo projects get one slot
-                assignments.add(new SlotAssignment(currentRow, currentSlot, currentProject));
+                assignments.add(new SlotAssignment(currentRow, currentSlot, false, currentProject));
                 
                 // Check if this solo project ended at row end
                 lastCategoryEndedAtRowEnd = (currentSlot == rowNumSlots);
