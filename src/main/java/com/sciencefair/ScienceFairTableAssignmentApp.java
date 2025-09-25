@@ -208,7 +208,7 @@ public class ScienceFairTableAssignmentApp {
             writer.println("        .table-header { background: #e5e7eb; padding: 2px 4px; text-align: center; font-size: 8px; font-weight: 600; color: #495057; border-bottom: 1px solid #dee2e6; position: relative; }");
             writer.println("        .team-table .table-header { background: #fffde3 !important; }");
             writer.println("        .empty-table .table-header { background: inherit !important; }");
-            writer.println("        .team-icon { position: absolute; top: 0px; right: 2px; font-size: 9px; opacity: 0.8; pointer-events: none; z-index: 2; }");
+            // Removed table-level team icon styling (slot-level icons remain via .team::before)
             writer.println("        .table-slots { display: flex; }");
             writer.println("        .empty { background: linear-gradient(135deg, #f7fafc, #edf2f7); color: #a0aec0; border-left: 4px solid #cbd5e0; }");
             writer.println("        .anim { background: linear-gradient(135deg, #f0fff4, #c6f6d5); color: #22543d; border-left: 4px solid #38a169; }");
@@ -324,9 +324,7 @@ public class ScienceFairTableAssignmentApp {
                     boolean isEmptyTable = assignment1.isUnassigned() && (assignment2 == null || assignment2.isUnassigned());
                     boolean isNonTeamTable = !isTeamTable && !isEmptyTable;
                     writer.println("                <div class='table-block" + (isTeamTable ? " team-table" : "") + (isEmptyTable ? " empty-table" : "") + (isNonTeamTable ? " non-team-table" : "") + "'>");
-                    if (isTeamTable) {
-                        writer.print("<span class='team-icon' title='Team Project'>👥</span>");
-                    }
+                    // Removed table-level team icon; slot-level team markers retained
                     writer.print("<div class='table-header'>Table " + tableNumber);
                     writer.println("</div>");
                     writer.println("                    <div class='table-slots'>");
