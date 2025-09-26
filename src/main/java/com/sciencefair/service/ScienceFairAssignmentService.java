@@ -161,9 +161,14 @@ public class ScienceFairAssignmentService {
         long reservedSlots = tableSlots.stream().filter(TableSlot::isReserved).count();
         long assignedSlots = assignments.stream().filter(a -> !a.isUnassigned()).count();
         long unassignedSlots = availableSlots - assignedSlots;
-        
+
         long totalProjects = projects.size();
-        long assignedProjects = assignedSlots;
+        // Count unique project IDs actually placed (team projects occupy 2 slots but should count once)
+        long assignedProjects = assignments.stream()
+            .filter(a -> !a.isUnassigned() && a.getProjectID() != null)
+            .map(SlotAssignment::getProjectID)
+            .distinct()
+            .count();
         long unassignedProjects = totalProjects - assignedProjects;
         
         summary.append("=== SCIENCE FAIR ASSIGNMENT SUMMARY ===\n");

@@ -168,7 +168,24 @@ public class ScienceFairTableAssignmentApp {
      * Generates an HTML layout file showing table assignments in a visual table format
      */
     private static void generateHtmlLayout(List<SlotAssignment> assignments, String outputFile) {
+        generateHtmlLayout(assignments, outputFile, null, true);
+    }
+
+    /**
+     * Overloaded layout generator allowing custom row ordering and optional pair-spacing logic.
+     * If rowOrder is provided, rows are rendered in that sequence (rows not found are ignored; extra rows skipped).
+     * Pair spacing logic: when enabled, a very small vertical gap is used between even/odd consecutive pairs (2&3,4&5,...)
+     */
+    public static void generateHtmlLayout(List<SlotAssignment> assignments, String outputFile, List<Integer> rowOrder, boolean applyPairSpacing) {
             // ...existing code...
+        generateHtmlLayout(assignments, outputFile, rowOrder, applyPairSpacing, null);
+    }
+
+    /**
+     * Advanced generator supporting explicit per-row margin-top overrides.
+     * If rowMarginTop is provided, it takes precedence over pair-spacing logic.
+     */
+    public static void generateHtmlLayout(List<SlotAssignment> assignments, String outputFile, List<Integer> rowOrder, boolean applyPairSpacing, Map<Integer,Integer> rowMarginTop) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(outputFile))) {
             // Group assignments by row
             Map<Integer, List<SlotAssignment>> assignmentsByRow = assignments.stream()
@@ -177,6 +194,14 @@ public class ScienceFairTableAssignmentApp {
                     TreeMap::new,
                     Collectors.toList()
                 ));
+
+            // Derive ordered list of rows
+            List<Integer> orderedRows;
+            if (rowOrder != null && !rowOrder.isEmpty()) {
+                orderedRows = rowOrder.stream().filter(assignmentsByRow::containsKey).collect(Collectors.toList());
+            } else {
+                orderedRows = new ArrayList<>(assignmentsByRow.keySet());
+            }
             
             // HTML header with embedded CSS
             writer.println("<!DOCTYPE html>");
@@ -329,14 +354,26 @@ public class ScienceFairTableAssignmentApp {
                 rowTableCounts.put(rowNumber, tablesInRow);
             }
             
-            for (Map.Entry<Integer, List<SlotAssignment>> rowEntry : assignmentsByRow.entrySet()) {
-                int rowNumber = rowEntry.getKey();
-                List<SlotAssignment> rowAssignments = rowEntry.getValue();
+            Integer previousRowNumber = null;
+            for (int rowNumber : orderedRows) {
+                List<SlotAssignment> rowAssignments = assignmentsByRow.get(rowNumber);
                 
                 // Sort by slot ID to get proper order
                 rowAssignments.sort((a, b) -> Integer.compare(a.getTableSlotID(), b.getTableSlotID()));
                 
-                writer.println("            <div style='margin: 20px 0;'>");
+                // Determine vertical spacing based on pairing rule
+                int marginTop;
+                if (rowMarginTop != null && rowMarginTop.containsKey(rowNumber)) {
+                    marginTop = rowMarginTop.get(rowNumber);
+                } else if (previousRowNumber == null) {
+                    marginTop = 0;
+                } else if (applyPairSpacing && previousRowNumber % 2 == 0 && rowNumber == previousRowNumber + 1) {
+                    marginTop = 4;
+                } else {
+                    marginTop = 24;
+                }
+                previousRowNumber = rowNumber;
+                writer.println("            <div class='row-wrapper' style='margin-top: " + marginTop + "px; margin-bottom: 0;'>");
                 writer.println("                <div class='row-label' style='display: inline-block; margin-right: 20px; vertical-align: top; margin-top: 10px;'>Row " + rowNumber + "</div>");
                 
                 // Group slots into tables (2 slots per table)
