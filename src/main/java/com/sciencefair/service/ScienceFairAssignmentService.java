@@ -54,7 +54,7 @@ public class ScienceFairAssignmentService {
             }
             
             ScienceProject currentProject = projects.get(currentProjectIndex);
-            int rowNumSlots = getRowNumSlots(currentRow);
+            int rowNumSlots = tableSlot.getRowNumSlots();
             
             // Rule 2: currentProject is a team project, AND currentSlot is the last slot in a row
             if (currentProject.isTeam() && currentSlot == rowNumSlots) {
@@ -107,7 +107,7 @@ public class ScienceFairAssignmentService {
                     assignments.add(new SlotAssignment(nextSlot.getRow(), nextSlot.getTableSlotID(), false, currentProject));
                     
                     // Check if this team project ended at row end
-                    lastCategoryEndedAtRowEnd = (nextSlot.getTableSlotID() == getRowNumSlots(nextSlot.getRow()));
+                    lastCategoryEndedAtRowEnd = (nextSlot.getTableSlotID() == nextSlot.getRowNumSlots());
                 }
                 
                 // Move to next project after successful team assignment
