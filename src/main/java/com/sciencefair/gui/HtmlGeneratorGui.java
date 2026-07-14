@@ -1,15 +1,18 @@
 package com.sciencefair.gui;
 
+import com.sciencefair.util.HallLayoutUtil;
+
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
-import java.io.IOException;
 
 public class HtmlGeneratorGui extends JFrame {
     private JButton openButton;
     private JFileChooser fileChooser;
+    private final java.util.prefs.Preferences prefs =
+            java.util.prefs.Preferences.userNodeForPackage(ScienceFairAssignmentGui.class);
 
     public HtmlGeneratorGui() {
         setTitle("Science Fair HTML Generator");
@@ -32,8 +35,9 @@ public class HtmlGeneratorGui extends JFrame {
             File csvFile = fileChooser.getSelectedFile();
             String htmlFile = csvFile.getParent() + File.separator + "output_from_csv_conversion.html";
             try {
-                // Call the main HTML generation logic from ScienceFairTableAssignmentApp
-                com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayoutFromCsv(csvFile.getAbsolutePath(), htmlFile);
+                HallLayoutUtil hallLayout = new HallLayoutUtil(prefs.getInt(HallLayoutUtil.PREF_AISLE_PIVOT_ROW, 0));
+                com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayoutFromCsv(
+                        csvFile.getAbsolutePath(), htmlFile, hallLayout);
                 Desktop.getDesktop().browse(new File(htmlFile).toURI());
                 System.exit(0);
             } catch (Exception ex) {

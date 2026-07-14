@@ -5,6 +5,7 @@ import com.sciencefair.model.ScienceProject;
 import com.sciencefair.model.SlotAssignment;
 import com.sciencefair.model.TableSlot;
 import com.sciencefair.service.ScienceFairAssignmentService;
+import com.sciencefair.util.HallLayoutUtil;
 import com.sciencefair.util.ScienceFairCsvUtil;
 
 import javax.swing.SwingUtilities;
@@ -29,8 +30,12 @@ public class ScienceFairTableAssignmentApp {
      * Generates an HTML layout from a CSV file (for GUI use)
      */
     public static void generateHtmlLayoutFromCsv(String csvFile, String htmlFile) throws Exception {
+        generateHtmlLayoutFromCsv(csvFile, htmlFile, HallLayoutUtil.disabled());
+    }
+
+    public static void generateHtmlLayoutFromCsv(String csvFile, String htmlFile, HallLayoutUtil hallLayout) throws Exception {
         List<SlotAssignment> assignments = com.sciencefair.util.ScienceFairCsvUtil.readSlotAssignments(csvFile);
-        generateHtmlLayout(assignments, htmlFile);
+        generateHtmlLayout(assignments, htmlFile, null, true, null, hallLayout);
     }
     
     public static void main(String[] args) {
@@ -94,6 +99,10 @@ public class ScienceFairTableAssignmentApp {
     }
     
     public static void runCommandLine(String tableSlotsFile, String projectsFile, String outputFile) {
+        runCommandLine(tableSlotsFile, projectsFile, outputFile, HallLayoutUtil.disabled());
+    }
+
+    public static void runCommandLine(String tableSlotsFile, String projectsFile, String outputFile, HallLayoutUtil hallLayout) {
         try {
             System.out.println("Science Fair Table Assignment - Command Line Mode");
             System.out.println("=".repeat(50));
@@ -121,7 +130,7 @@ public class ScienceFairTableAssignmentApp {
             // Run assignment
             System.out.println("Running assignment algorithm...");
             ScienceFairAssignmentService assignmentService = new ScienceFairAssignmentService();
-            List<SlotAssignment> assignments = assignmentService.assignProjectsToSlots(projects, tableSlots);
+            List<SlotAssignment> assignments = assignmentService.assignProjectsToSlots(projects, tableSlots, hallLayout);
             
             // Save results
             System.out.println("Saving results to: " + outputFile);
@@ -130,7 +139,7 @@ public class ScienceFairTableAssignmentApp {
             // Generate single HTML layout file
             String htmlOutFile = outputFile.replace(".csv", ".html");
             System.out.println("Generating HTML layout: " + htmlOutFile);
-            generateHtmlLayout(assignments, htmlOutFile);
+            generateHtmlLayout(assignments, htmlOutFile, null, true, null, hallLayout);
             
             // Print summary
             System.out.println("\n" + assignmentService.generateAssignmentSummary(assignments, projects, tableSlots));
@@ -168,7 +177,7 @@ public class ScienceFairTableAssignmentApp {
      * Generates an HTML layout file showing table assignments in a visual table format
      */
     private static void generateHtmlLayout(List<SlotAssignment> assignments, String outputFile) {
-        generateHtmlLayout(assignments, outputFile, null, true);
+        generateHtmlLayout(assignments, outputFile, null, true, null, HallLayoutUtil.disabled());
     }
 
     /**
@@ -177,8 +186,7 @@ public class ScienceFairTableAssignmentApp {
      * Pair spacing logic: when enabled, a very small vertical gap is used between even/odd consecutive pairs (2&3,4&5,...)
      */
     public static void generateHtmlLayout(List<SlotAssignment> assignments, String outputFile, List<Integer> rowOrder, boolean applyPairSpacing) {
-            // ...existing code...
-        generateHtmlLayout(assignments, outputFile, rowOrder, applyPairSpacing, null);
+        generateHtmlLayout(assignments, outputFile, rowOrder, applyPairSpacing, null, HallLayoutUtil.disabled());
     }
 
     /**
@@ -186,6 +194,28 @@ public class ScienceFairTableAssignmentApp {
      * If rowMarginTop is provided, it takes precedence over pair-spacing logic.
      */
     public static void generateHtmlLayout(List<SlotAssignment> assignments, String outputFile, List<Integer> rowOrder, boolean applyPairSpacing, Map<Integer,Integer> rowMarginTop) {
+        generateHtmlLayout(assignments, outputFile, rowOrder, applyPairSpacing, rowMarginTop, HallLayoutUtil.disabled(), null);
+    }
+
+    public static void generateHtmlLayout(
+            List<SlotAssignment> assignments,
+            String outputFile,
+            List<Integer> rowOrder,
+            boolean applyPairSpacing,
+            Map<Integer,Integer> rowMarginTop,
+            HallLayoutUtil hallLayout) {
+        generateHtmlLayout(assignments, outputFile, rowOrder, applyPairSpacing, rowMarginTop, hallLayout, null);
+    }
+
+    public static void generateHtmlLayout(
+            List<SlotAssignment> assignments,
+            String outputFile,
+            List<Integer> rowOrder,
+            boolean applyPairSpacing,
+            Map<Integer,Integer> rowMarginTop,
+            HallLayoutUtil hallLayout,
+            Map<Integer, Integer> rowGroupIndex) {
+        HallLayoutUtil layout = hallLayout != null ? hallLayout : HallLayoutUtil.disabled();
         try (PrintWriter writer = new PrintWriter(new FileWriter(outputFile))) {
             // Group assignments by row
             Map<Integer, List<SlotAssignment>> assignmentsByRow = assignments.stream()
@@ -200,8 +230,10 @@ public class ScienceFairTableAssignmentApp {
             if (rowOrder != null && !rowOrder.isEmpty()) {
                 orderedRows = rowOrder.stream().filter(assignmentsByRow::containsKey).collect(Collectors.toList());
             } else {
-                orderedRows = new ArrayList<>(assignmentsByRow.keySet());
+                orderedRows = layout.getTraversalRowOrder(assignmentsByRow.keySet());
             }
+
+            Map<Integer, Boolean> rowReverseMap = layout.buildRowReverseMap(assignmentsByRow.keySet());
             
             // HTML header with embedded CSS
             writer.println("<!DOCTYPE html>");
@@ -211,11 +243,13 @@ public class ScienceFairTableAssignmentApp {
             writer.println("    <style>");
             writer.println("        * { box-sizing: border-box; }");
             writer.println("        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }");
-            writer.println("        .container { max-width: 1600px; margin: 0 auto; background: rgba(255,255,255,0.95); padding: 30px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); backdrop-filter: blur(10px); }");
+            writer.println("        .container { max-width: min(3200px, 98vw); margin: 0 auto; background: rgba(255,255,255,0.95); padding: 30px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); backdrop-filter: blur(10px); }");
             writer.println("        h1 { color: #2d3748; text-align: center; margin-bottom: 40px; font-size: 2.5em; font-weight: 300; letter-spacing: -1px; }");
-            writer.println("        .table-container { overflow-x: auto; margin: 30px 0; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); }");
+            writer.println("        .table-container { overflow-x: auto; margin: 30px 0; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); width: 100%; }");
             writer.println("        table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 11px; background: white; border-radius: 12px; overflow: hidden; }");
-            writer.println("        .row-label { background: linear-gradient(135deg, #4a5568, #2d3748); color: white; padding: 12px 16px; font-weight: 600; text-align: center; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); min-width: 60px; }");
+            writer.println("        .row-label { background: linear-gradient(135deg, #4a5568, #2d3748); color: white; padding: 12px 16px; font-weight: 600; text-align: center; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); min-width: 60px; flex: 0 0 auto; }");
+            writer.println("        .row-wrapper { display: flex; flex-wrap: nowrap; align-items: flex-start; }");
+            writer.println("        .row-tables { display: flex; flex-wrap: nowrap; flex: 1 1 auto; align-items: flex-start; min-width: 0; }");
             writer.println("        .slot { border-top: 2px solid transparent !important; border-bottom: 2px solid transparent !important; border-left: none !important; border-right: none !important; box-shadow: inset 0 0 0 2px transparent; padding: 4px 2px; text-align: center; min-width: 60px; font-weight: 500; position: relative; font-size: 9px; border-radius: 4px; }");
             // Table slot borders (not legend samples) - consistent 2px inset border for all categories
             writer.println("        .slot:not(.legend-sample).anim { border-color: #38a169 !important; box-shadow: inset 0 0 0 2px #38a169 !important; }");
@@ -238,7 +272,7 @@ public class ScienceFairTableAssignmentApp {
                         writer.println("        .slot:not(.legend-sample).empty { border-color: #a0aec0 !important; box-shadow: inset 0 0 0 2px #a0aec0 !important; background: linear-gradient(135deg, #f7fafc, #edf2f7); color: #a0aec0; border-left: 4px solid #cbd5e0; min-height: 38px; height: 38px; }");
                         writer.println("        .slot:not(.legend-sample).empty.reserved { background: linear-gradient(135deg, #ffe6e6, #ffd6d6); color: #b80000; border-left: 4px solid #ff6b6b; border-color: #ff6b6b !important; box-shadow: inset 0 0 0 2px #ff6b6b !important; min-height: 38px; height: 38px; }");
             writer.println("        .table-block.non-team-table { background: #e5e7eb !important; }");
-            writer.println("        .table-block { display: inline-block; margin: 0 3px 4px 0; border: 2px solid #b8b8b8; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); background: #fffbe6; position: relative; min-height: 70px; padding-left: 4px; padding-right: 4px; }");
+            writer.println("        .table-block { display: block; flex: 0 0 auto; margin: 0 3px 4px 0; border: 2px solid #b8b8b8; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); background: #fffbe6; position: relative; min-height: 70px; padding-left: 4px; padding-right: 4px; }");
             writer.println("        .table-slots { display: flex; gap: 8px; }");
             writer.println("        .table-block.empty-table { background: inherit !important; }");
             writer.println("        .table-block.team-table { background: #fffde3; }");
@@ -302,7 +336,22 @@ public class ScienceFairTableAssignmentApp {
             writer.println("        .stat-card { background: white; padding: 8px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); text-align: center; }");
             writer.println("        .stat-number { font-size: 1.2em; font-weight: 700; color: #4a5568; }");
             writer.println("        .stat-label { color: #718096; font-size: 0.8em; margin-top: 2px; }");
-            writer.println("        @media (max-width: 768px) { .container { padding: 15px; } h1 { font-size: 1.8em; } .slot { min-width: 70px; padding: 6px 2px; font-size: 10px; } .row-label { padding: 8px 10px; font-size: 10px; } }");
+            writer.println("        .center-aisle { margin: 20px 0 16px 76px; padding: 14px 0; text-align: center; border-top: 3px dashed #94a3b8; border-bottom: 3px dashed #94a3b8; background: linear-gradient(90deg, rgba(148,163,184,0.05), rgba(148,163,184,0.18), rgba(148,163,184,0.05)); }");
+            writer.println("        .center-aisle-vertical { flex: 0 0 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: stretch; border-left: 3px dashed #94a3b8; border-right: 3px dashed #94a3b8; background: linear-gradient(180deg, rgba(148,163,184,0.05), rgba(148,163,184,0.22), rgba(148,163,184,0.05)); margin: 28px 12px; padding: 20px 6px; border-radius: 8px; }");
+            writer.println("        .center-aisle-vertical .center-aisle-label { writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); white-space: nowrap; }");
+            writer.println("        .center-aisle-vertical .center-aisle-note { writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); margin-top: 0; margin-right: 8px; font-size: 9px; max-height: 180px; }");
+            writer.println("        .hall-layout { display: flex; align-items: flex-start; gap: 0; width: 100%; min-width: fit-content; }");
+            writer.println("        .hall-column { flex: 1 1 auto; min-width: 1050px; }");
+            writer.println("        .hall-column-left { display: flex; flex-direction: column; align-items: flex-end; }");
+            writer.println("        .hall-column-left .hall-side-label { align-self: stretch; }");
+            writer.println("        .hall-column-right { display: flex; flex-direction: column; align-items: flex-start; }");
+            writer.println("        .hall-column-right .hall-side-label { align-self: stretch; }");
+            writer.println("        .hall-column .hall-side-label { margin-left: 0; margin-bottom: 8px; display: block; text-align: center; }");
+            writer.println("        .center-aisle-label { display: inline-block; padding: 4px 18px; border-radius: 999px; background: #475569; color: white; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }");
+            writer.println("        .center-aisle-note { display: block; margin-top: 6px; color: #64748b; font-size: 10px; font-style: italic; }");
+            writer.println("        .hall-side-label { display: inline-block; margin-left: 76px; margin-bottom: 4px; padding: 2px 10px; border-radius: 6px; background: #e2e8f0; color: #334155; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }");
+            writer.println("        @media (max-width: 1100px) { .hall-layout { flex-direction: column; } .center-aisle-vertical { flex: none; flex-direction: row; width: auto; margin: 16px 0; padding: 12px 20px; border-left: none; border-right: none; border-top: 3px dashed #94a3b8; border-bottom: 3px dashed #94a3b8; } .center-aisle-vertical .center-aisle-label, .center-aisle-vertical .center-aisle-note { writing-mode: horizontal-tb; transform: none; } }");
+            writer.println("        @media (max-width: 768px) { .container { padding: 15px; } h1 { font-size: 1.8em; } .slot { min-width: 70px; padding: 6px 2px; font-size: 10px; } .row-label { padding: 8px 10px; font-size: 10px; } .center-aisle { margin-left: 0; } .hall-side-label { margin-left: 0; } }");
             writer.println("    </style>");
             writer.println("</head>");
             writer.println("<body>");
@@ -327,6 +376,9 @@ public class ScienceFairTableAssignmentApp {
             // Table Counts: count total tables (each table = 2 slots)
             int tableCount = assignments.size() / 2;
 
+            // Row Count: distinct rows in the hall layout
+            int rowCount = assignmentsByRow.size();
+
             writer.println("        <div class='stats'>");
             writer.println("            <div class='stat-card'>");
             writer.println("                <div class='stat-number'>" + totalProjects + "</div>");
@@ -340,11 +392,29 @@ public class ScienceFairTableAssignmentApp {
             writer.println("                <div class='stat-number'>" + tableCount + "</div>");
             writer.println("                <div class='stat-label'>Table Count</div>");
             writer.println("            </div>");
+            writer.println("            <div class='stat-card'>");
+            writer.println("                <div class='stat-number'>" + rowCount + "</div>");
+            writer.println("                <div class='stat-label'>Row Count</div>");
+            writer.println("            </div>");
+            if (layout.isAisleLayoutEnabled()) {
+                writer.println("            <div class='stat-card' style='grid-column: 1 / -1; text-align: center;'>");
+                writer.println("                <div class='stat-label'>Center aisle after row "
+                        + layout.getAislePivotRow() + " — assignments continue row "
+                        + layout.getRightSideRows(assignmentsByRow.keySet()).stream()
+                            .map(String::valueOf)
+                            .collect(Collectors.joining(", "))
+                        + "; right column shown top-down as "
+                        + layout.getRightSideDisplayRows(assignmentsByRow.keySet()).stream()
+                            .map(String::valueOf)
+                            .collect(Collectors.joining(", "))
+                        + "</div>");
+                writer.println("            </div>");
+            }
             writer.println("        </div>");
             
             // Generate table
             writer.println("        <div class='table-container'>");
-            
+
             // First, collect all row information to calculate proper table numbers
             Map<Integer, Integer> rowTableCounts = new TreeMap<>();
             for (Map.Entry<Integer, List<SlotAssignment>> rowEntry : assignmentsByRow.entrySet()) {
@@ -353,91 +423,30 @@ public class ScienceFairTableAssignmentApp {
                 int tablesInRow = slotsInRow / 2; // 2 slots per table
                 rowTableCounts.put(rowNumber, tablesInRow);
             }
-            
-            Integer previousRowNumber = null;
-            for (int rowNumber : orderedRows) {
-                List<SlotAssignment> rowAssignments = assignmentsByRow.get(rowNumber);
-                
-                // Sort by slot ID to get proper order
-                rowAssignments.sort((a, b) -> Integer.compare(a.getTableSlotID(), b.getTableSlotID()));
-                
-                // Determine vertical spacing based on pairing rule
-                int marginTop;
-                if (rowMarginTop != null && rowMarginTop.containsKey(rowNumber)) {
-                    marginTop = rowMarginTop.get(rowNumber);
-                } else if (previousRowNumber == null) {
-                    marginTop = 0;
-                } else if (applyPairSpacing && previousRowNumber % 2 == 0 && rowNumber == previousRowNumber + 1) {
-                    marginTop = 4;
-                } else {
-                    marginTop = 24;
-                }
-                previousRowNumber = rowNumber;
-                writer.println("            <div class='row-wrapper' style='margin-top: " + marginTop + "px; margin-bottom: 0;'>");
-                writer.println("                <div class='row-label' style='display: inline-block; margin-right: 20px; vertical-align: top; margin-top: 10px;'>Row " + rowNumber + "</div>");
-                
-                // Group slots into tables (2 slots per table)
-                List<Integer> tableNumbers = new ArrayList<>();
-                for (int i = 0; i < rowAssignments.size(); i += 2) {
-                    int tableIndex = i / 2; // 0, 1, 2, etc.
-                    int tableNumber = calculateSnakeFlowTableNumber(rowNumber, tableIndex + 1, rowTableCounts);
-                    tableNumbers.add(tableNumber);
-                }
-                
-                // For even rows, reverse the visual order to create snake flow pattern
-                List<Integer> visualOrder = new ArrayList<>();
-                for (int i = 0; i < tableNumbers.size(); i++) {
-                    visualOrder.add(i);
-                }
-                if (rowNumber % 2 == 0) {
-                    Collections.reverse(visualOrder);
-                }
-                
-                for (int visualIndex : visualOrder) {
-                    int tableIndex = visualIndex;
-                    int slotIndexStart = tableIndex * 2;
-                    int tableNumber = tableNumbers.get(tableIndex);
-                    boolean isTeamTable = false;
-                    SlotAssignment assignment1 = rowAssignments.get(slotIndexStart);
-                    SlotAssignment assignment2 = (slotIndexStart + 1 < rowAssignments.size()) ? rowAssignments.get(slotIndexStart + 1) : null;
-                    if (assignment1.getIsTeam() != null && assignment1.getIsTeam()) {
-                        isTeamTable = true;
-                    }
-                    if (assignment2 != null && assignment2.getIsTeam() != null && assignment2.getIsTeam()) {
-                        isTeamTable = true;
-                    }
-                    boolean isEmptyTable = assignment1.isUnassigned() && (assignment2 == null || assignment2.isUnassigned());
-                    boolean isNonTeamTable = !isTeamTable && !isEmptyTable;
-                    writer.println("                <div class='table-block" + (isTeamTable ? " team-table" : "") + (isEmptyTable ? " empty-table" : "") + (isNonTeamTable ? " non-team-table" : "") + "'>");
-                    // Removed table-level team icon; slot-level team markers retained
-                    writer.print("<div class='table-header'>Table " + tableNumber);
-                    writer.println("</div>");
-                    writer.println("                    <div class='table-slots'>");
-                    // For even rows, reverse slot order within table
-                    if (rowNumber % 2 == 0) {
-                        if (assignment2 != null) {
-                            String slotContent2 = generateSlotContent(assignment2);
-                            String cssClass2 = generateSlotCssClass(assignment2);
-                            writer.println("                        <div class='" + cssClass2 + "'>" + slotContent2 + "</div>");
-                        }
-                        String slotContent1 = generateSlotContent(assignment1);
-                        String cssClass1 = generateSlotCssClass(assignment1);
-                        writer.println("                        <div class='" + cssClass1 + "'>" + slotContent1 + "</div>");
-                    } else {
-                        String slotContent1 = generateSlotContent(assignment1);
-                        String cssClass1 = generateSlotCssClass(assignment1);
-                        writer.println("                        <div class='" + cssClass1 + "'>" + slotContent1 + "</div>");
-                        if (assignment2 != null) {
-                            String slotContent2 = generateSlotContent(assignment2);
-                            String cssClass2 = generateSlotCssClass(assignment2);
-                            writer.println("                        <div class='" + cssClass2 + "'>" + slotContent2 + "</div>");
-                        }
-                    }
-                    writer.println("                    </div>");
-                    writer.println("                </div>");
-                }
-                
+            Map<Integer, Map<Integer, Integer>> snakeTableNumbers = layout.buildSnakeTableNumbers(rowTableCounts);
+
+            if (layout.isAisleLayoutEnabled()) {
+                List<Integer> leftRows = layout.getLeftSideRows(assignmentsByRow.keySet());
+                List<Integer> rightRows = layout.getRightSideDisplayRows(assignmentsByRow.keySet());
+
+                writer.println("            <div class='hall-layout'>");
+                writer.println("                <div class='hall-column hall-column-left'>");
+                writer.println("                    <div class='hall-side-label'>Left side of hall</div>");
+                renderRowSequence(writer, leftRows, assignmentsByRow, rowReverseMap, rowTableCounts,
+                        snakeTableNumbers, rowMarginTop, rowGroupIndex, applyPairSpacing, layout);
+                writer.println("                </div>");
+                writer.println("                <div class='center-aisle-vertical'>");
+                writer.println("                    <span class='center-aisle-label'>Center Aisle</span>");
+                writer.println("                </div>");
+                writer.println("                <div class='hall-column hall-column-right'>");
+                writer.println("                    <div class='hall-side-label'>Right side of hall</div>");
+                renderRowSequence(writer, rightRows, assignmentsByRow, rowReverseMap, rowTableCounts,
+                        snakeTableNumbers, rowMarginTop, rowGroupIndex, applyPairSpacing, layout);
+                writer.println("                </div>");
                 writer.println("            </div>");
+            } else {
+                renderRowSequence(writer, orderedRows, assignmentsByRow, rowReverseMap, rowTableCounts,
+                        snakeTableNumbers, rowMarginTop, rowGroupIndex, applyPairSpacing, layout);
             }
             writer.println("        </div>");
             
@@ -627,6 +636,139 @@ public class ScienceFairTableAssignmentApp {
         return tableNumber;
     }
     
+    private static final int GROUP_SMALL_GAP = 2;
+    private static final int GROUP_LARGE_GAP = 48;
+    private static final int DEFAULT_ROW_GAP = 24;
+
+    private static void renderRowSequence(
+            PrintWriter writer,
+            List<Integer> rowNumbers,
+            Map<Integer, List<SlotAssignment>> assignmentsByRow,
+            Map<Integer, Boolean> rowReverseMap,
+            Map<Integer, Integer> rowTableCounts,
+            Map<Integer, Map<Integer, Integer>> snakeTableNumbers,
+            Map<Integer, Integer> rowMarginTop,
+            Map<Integer, Integer> rowGroupIndex,
+            boolean applyPairSpacing,
+            HallLayoutUtil layout) {
+        Integer previousRowNumber = null;
+        for (int rowNumber : rowNumbers) {
+            int marginTop = computeRowMarginTop(
+                    rowNumber, previousRowNumber, rowMarginTop, rowGroupIndex, applyPairSpacing, layout);
+            previousRowNumber = rowNumber;
+            renderSingleRow(writer, rowNumber, assignmentsByRow.get(rowNumber), rowReverseMap, rowTableCounts,
+                    snakeTableNumbers, layout, marginTop, "            ");
+        }
+    }
+
+    private static int computeRowMarginTop(
+            int rowNumber,
+            Integer previousRowNumber,
+            Map<Integer, Integer> rowMarginTop,
+            Map<Integer, Integer> rowGroupIndex,
+            boolean applyPairSpacing,
+            HallLayoutUtil layout) {
+        if (previousRowNumber == null) {
+            return 0;
+        }
+        if (rowGroupIndex != null && !rowGroupIndex.isEmpty()) {
+            Integer prevGroup = rowGroupIndex.get(previousRowNumber);
+            Integer rowGroup = rowGroupIndex.get(rowNumber);
+            if (prevGroup != null && rowGroup != null) {
+                return prevGroup.equals(rowGroup) ? GROUP_SMALL_GAP : GROUP_LARGE_GAP;
+            }
+            return DEFAULT_ROW_GAP;
+        }
+        if (rowMarginTop != null && rowMarginTop.containsKey(rowNumber)) {
+            return rowMarginTop.get(rowNumber);
+        }
+        if (applyPairSpacing && !layout.isAisleLayoutEnabled()
+                && previousRowNumber % 2 == 0 && rowNumber == previousRowNumber + 1) {
+            return 4;
+        }
+        return DEFAULT_ROW_GAP;
+    }
+
+    private static void renderSingleRow(
+            PrintWriter writer,
+            int rowNumber,
+            List<SlotAssignment> rowAssignments,
+            Map<Integer, Boolean> rowReverseMap,
+            Map<Integer, Integer> rowTableCounts,
+            Map<Integer, Map<Integer, Integer>> snakeTableNumbers,
+            HallLayoutUtil layout,
+            int marginTop,
+            String indent) {
+        if (rowAssignments == null || rowAssignments.isEmpty()) {
+            return;
+        }
+
+        rowAssignments.sort((a, b) -> Integer.compare(a.getTableSlotID(), b.getTableSlotID()));
+        boolean reverseRow = rowReverseMap.getOrDefault(rowNumber, rowNumber % 2 == 0);
+
+        writer.println(indent + "<div class='row-wrapper' style='margin-top: " + marginTop + "px; margin-bottom: 0;'>");
+        writer.println(indent + "    <div class='row-label'>Row " + rowNumber + "</div>");
+        writer.println(indent + "    <div class='row-tables'>");
+
+        List<Integer> tableNumbers = new ArrayList<>();
+        int tablesInRow = rowTableCounts.getOrDefault(rowNumber, 0);
+        for (int i = 0; i < rowAssignments.size(); i += 2) {
+            int tableIndex = i / 2;
+            int tableNumber = layout.resolveTableNumber(snakeTableNumbers, rowNumber, tableIndex, tablesInRow, reverseRow);
+            tableNumbers.add(tableNumber);
+        }
+
+        List<Integer> visualOrder = new ArrayList<>();
+        for (int i = 0; i < tableNumbers.size(); i++) {
+            visualOrder.add(i);
+        }
+        if (reverseRow) {
+            Collections.reverse(visualOrder);
+        }
+
+        String tableIndent = indent + "    ";
+        String slotIndent = indent + "        ";
+        for (int visualIndex : visualOrder) {
+            int tableIndex = visualIndex;
+            int slotIndexStart = tableIndex * 2;
+            int tableNumber = tableNumbers.get(tableIndex);
+            SlotAssignment assignment1 = rowAssignments.get(slotIndexStart);
+            SlotAssignment assignment2 = (slotIndexStart + 1 < rowAssignments.size()) ? rowAssignments.get(slotIndexStart + 1) : null;
+
+            boolean isTeamTable = (assignment1.getIsTeam() != null && assignment1.getIsTeam())
+                    || (assignment2 != null && assignment2.getIsTeam() != null && assignment2.getIsTeam());
+            boolean isEmptyTable = assignment1.isUnassigned() && (assignment2 == null || assignment2.isUnassigned());
+            boolean isNonTeamTable = !isTeamTable && !isEmptyTable;
+
+            writer.println(tableIndent + "<div class='table-block"
+                    + (isTeamTable ? " team-table" : "")
+                    + (isEmptyTable ? " empty-table" : "")
+                    + (isNonTeamTable ? " non-team-table" : "") + "'>");
+            writer.println(tableIndent + "    <div class='table-header'>Table " + tableNumber + "</div>");
+            writer.println(tableIndent + "    <div class='table-slots'>");
+            if (reverseRow) {
+                if (assignment2 != null) {
+                    writer.println(slotIndent + "<div class='" + generateSlotCssClass(assignment2) + "'>"
+                            + generateSlotContent(assignment2) + "</div>");
+                }
+                writer.println(slotIndent + "<div class='" + generateSlotCssClass(assignment1) + "'>"
+                        + generateSlotContent(assignment1) + "</div>");
+            } else {
+                writer.println(slotIndent + "<div class='" + generateSlotCssClass(assignment1) + "'>"
+                        + generateSlotContent(assignment1) + "</div>");
+                if (assignment2 != null) {
+                    writer.println(slotIndent + "<div class='" + generateSlotCssClass(assignment2) + "'>"
+                            + generateSlotContent(assignment2) + "</div>");
+                }
+            }
+            writer.println(tableIndent + "    </div>");
+            writer.println(tableIndent + "</div>");
+        }
+
+        writer.println(indent + "    </div>");
+        writer.println(indent + "</div>");
+    }
+
     /**
      * Generates the content for a slot display
      */

@@ -4,6 +4,7 @@ import com.sciencefair.model.ScienceProject;
 import com.sciencefair.model.SlotAssignment;
 import com.sciencefair.model.TableSlot;
 import com.sciencefair.service.ScienceFairAssignmentService;
+import com.sciencefair.util.HallLayoutUtil;
 import com.sciencefair.util.ScienceFairCsvUtil;
 
 import javax.swing.*;
@@ -33,6 +34,10 @@ public class ScienceFairAssignmentGui extends JFrame {
     private JButton runButton;
     private JButton openHtmlButton;
     private JButton layoutConfigButton; // Row grouping configuration button
+    private JTextField aislePivotField;
+    private JCheckBox autoDetectAislePivotCheck;
+    private JLabel aisleInfoLabel;
+    private boolean suppressAislePivotEvents;
     private JTextPane resultArea;
     private ScienceFairAssignmentService assignmentService;
     private JCheckBox openHtmlAfterRunCheck; // Auto-open HTML after successful run
@@ -42,6 +47,27 @@ public class ScienceFairAssignmentGui extends JFrame {
     private static final String PREF_TABLES_DIR = "lastTableSlotsDir";
     private static final String PREF_PROJECTS_DIR = "lastProjectsDir";
     private static final String PREF_ROW_GROUPS = "rowGroupsText"; // persists row grouping configuration
+    
+    private HallLayoutUtil loadHallLayout() {
+        int pivot = resolveAislePivot();
+        if (pivot < 0) {
+            pivot = prefs.getInt(HallLayoutUtil.PREF_AISLE_PIVOT_ROW, 0);
+        }
+        return new HallLayoutUtil(pivot);
+    }
+
+    private void persistAislePivot() {
+        if (autoDetectAislePivotCheck != null) {
+            prefs.putBoolean(HallLayoutUtil.PREF_AISLE_AUTO_DETECT, autoDetectAislePivotCheck.isSelected());
+        }
+        if (aislePivotField == null) {
+            return;
+        }
+        int pivot = resolveAislePivot();
+        if (pivot >= 0) {
+            prefs.putInt(HallLayoutUtil.PREF_AISLE_PIVOT_ROW, pivot);
+        }
+    }
     
     public ScienceFairAssignmentGui() {
         this.assignmentService = new ScienceFairAssignmentService();
@@ -83,6 +109,15 @@ public class ScienceFairAssignmentGui extends JFrame {
     layoutConfigButton = new JButton("Row Grouping ⚙");
     layoutConfigButton.setToolTipText("Configure row grouping (order & spacing)");
     layoutConfigButton.setEnabled(true); // Enabled at startup per new requirement
+    aislePivotField = new JTextField(4);
+    int savedPivot = prefs.getInt(HallLayoutUtil.PREF_AISLE_PIVOT_ROW, 3);
+    aislePivotField.setText(String.valueOf(savedPivot));
+    aislePivotField.setToolTipText("Last row on the left side before crossing the center aisle (0 = disabled)");
+    restrictToDigitsOnly(aislePivotField);
+    autoDetectAislePivotCheck = new JCheckBox("Auto-detect split from row count");
+    autoDetectAislePivotCheck.setSelected(prefs.getBoolean(HallLayoutUtil.PREF_AISLE_AUTO_DETECT, false));
+    autoDetectAislePivotCheck.setToolTipText("Split rows evenly across the aisle (e.g. 6 rows → 3 left / 3 right; 7 rows → 4 left / 3 right)");
+    aisleInfoLabel = new JLabel("(last row on left side; 0 = disabled)");
     resultArea = new JTextPane();
     resultArea.setEditable(false);
     resultArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
@@ -146,7 +181,21 @@ public class ScienceFairAssignmentGui extends JFrame {
             }
         });
         inputPanel.add(browseProjectsBtn, gbc);
-        
+
+        // Center aisle pivot row
+        gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.WEST;
+        inputPanel.add(new JLabel("Center aisle pivot row:"), gbc);
+
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        JPanel aislePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        aislePanel.add(aislePivotField);
+        aislePanel.add(autoDetectAislePivotCheck);
+        aislePanel.add(aisleInfoLabel);
+        inputPanel.add(aislePanel, gbc);
+
+        gbc.gridx = 2; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        inputPanel.add(new JLabel(""), gbc);
+
     // Output folder row removed
         
     // (Removed options panel for output folder strategies)
@@ -186,7 +235,7 @@ public class ScienceFairAssignmentGui extends JFrame {
                 validateInputs();
             }
         });
-    gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 4; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.anchor = GridBagConstraints.EAST; gbc.insets = new Insets(15, 0, 10, 0);
+    gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 4; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.anchor = GridBagConstraints.EAST; gbc.insets = new Insets(15, 0, 10, 0);
     inputPanel.add(buttonPanel, gbc);
         
         // Add panels to frame
@@ -202,10 +251,11 @@ public class ScienceFairAssignmentGui extends JFrame {
     instructions.setForeground(new Color(173, 216, 230)); // light blue
         instructions.setText("Instructions:\n" +
             "1. Select your Table Slots CSV and Projects CSV files.\n" +
-            "2. The output folder is automatically created next to the JAR file and will contain both output.csv and output.html.\n" +
-            "3. (Optional) Adjust row grouping via the 'Row Grouping' button.\n" +
-            "4. Leave 'Open HTML after run' checked to automatically open the layout when complete.\n" +
-            "5. Click 'Run' to execute the assignment (tooltip shows full action).");
+            "2. Set Center aisle pivot row, or enable auto-detect to split rows evenly (e.g. 6 rows → pivot 3; 7 rows → pivot 4).\n" +
+            "3. The output folder is automatically created next to the JAR file and will contain both output.csv and output.html.\n" +
+            "4. (Optional) Adjust row grouping via the 'Row Grouping' button.\n" +
+            "5. Leave 'Open HTML after run' checked to automatically open the layout when complete.\n" +
+            "6. Click 'Run' to execute the assignment (tooltip shows full action).");
         add(instructions, BorderLayout.SOUTH);
     }
     
@@ -249,14 +299,43 @@ public class ScienceFairAssignmentGui extends JFrame {
             public void removeUpdate(javax.swing.event.DocumentEvent e) { validateInputs(); }
             public void changedUpdate(javax.swing.event.DocumentEvent e) { validateInputs(); }
         });
+        aislePivotField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { onAislePivotDocumentChanged(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { onAislePivotDocumentChanged(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { onAislePivotDocumentChanged(); }
+        });
+        autoDetectAislePivotCheck.addActionListener(e -> validateInputs());
         validateInputs();
+    }
+
+    private void onAislePivotDocumentChanged() {
+        if (!suppressAislePivotEvents) {
+            validateInputs();
+        }
     }
 
     // Validate input file formats and enable/disable buttons accordingly
     private void validateInputs() {
         boolean validTables = isValidTableSlotsFile(tableSlotsFileField.getText().trim());
         boolean validProjects = isValidProjectsFile(projectsFileField.getText().trim());
-        boolean enable = validTables && validProjects;
+        boolean autoDetect = autoDetectAislePivotCheck != null && autoDetectAislePivotCheck.isSelected();
+        int totalRows = validTables ? countHallRowsFromTableSlots(tableSlotsFileField.getText().trim()) : 0;
+        int aislePivot;
+        boolean validAisle;
+        if (autoDetect) {
+            if (!validTables) {
+                aislePivot = -1;
+                validAisle = false;
+            } else {
+                aislePivot = HallLayoutUtil.computeAutoPivotRow(totalRows);
+                validAisle = aislePivot >= 0;
+            }
+        } else {
+            aislePivot = parseAislePivot(aislePivotField.getText());
+            validAisle = aislePivot >= 0;
+        }
+        updateAisleDisplay(autoDetect, validTables, totalRows, aislePivot);
+        boolean enable = validTables && validProjects && validAisle;
         runButton.setEnabled(enable);
         openHtmlButton.setEnabled(false);
         openFolderButton.setEnabled(false);
@@ -286,6 +365,26 @@ public class ScienceFairAssignmentGui extends JFrame {
 
         if (enable) {
             appendColoredText("Both files are valid. Click 'Assign Projects to Table Slots' to continue.\n", Color.GREEN);
+        }
+
+        if (aislePivot < 0) {
+            appendColoredText("Center aisle: ", Color.WHITE);
+            if (autoDetect) {
+                appendColoredText("Select a valid Table Slots file to auto-detect pivot row.\n", Color.RED);
+            } else {
+                appendColoredText("Invalid pivot row (use 0 to disable).\n", Color.RED);
+            }
+        } else if (aislePivot == 0) {
+            appendColoredText("Center aisle: Disabled (rows flow 1, 2, 3... downward).\n", Color.WHITE);
+        } else {
+            int leftRows = aislePivot;
+            int rightRows = totalRows > 0 ? totalRows - aislePivot : 0;
+            String splitInfo = (autoDetect && totalRows > 0)
+                    ? " — " + totalRows + " rows total, auto-detected pivot " + aislePivot
+                        + " (" + leftRows + " left, " + rightRows + " right)"
+                    : "";
+            appendColoredText("Center aisle: Enabled — pivot after row " + aislePivot + splitInfo
+                    + " (right side rows continue upward).\n", new Color(144, 238, 144));
         }
     }
 
@@ -404,10 +503,17 @@ public class ScienceFairAssignmentGui extends JFrame {
         }
     // Output folder will be selected and created after successful assignment processing
         
-    // Disable buttons during processing
+    // Disable button during processing
     runButton.setEnabled(false);
     openHtmlButton.setEnabled(false);
+    persistAislePivot();
+    HallLayoutUtil hallLayoutPreview = loadHallLayout();
     setStyledText("Processing assignment...\n", Color.WHITE);
+    if (hallLayoutPreview.isAisleLayoutEnabled()) {
+        appendColoredText("Center aisle pivot: row " + hallLayoutPreview.getAislePivotRow() + "\n", new Color(144, 238, 144));
+    } else {
+        appendColoredText("Center aisle: disabled\n", Color.WHITE);
+    }
         
         // Run assignment in background thread
         SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
@@ -423,7 +529,8 @@ public class ScienceFairAssignmentGui extends JFrame {
                     publish("Loaded " + projects.size() + " projects");
                     
                     publish("Running assignment algorithm...");
-                    List<SlotAssignment> assignments = assignmentService.assignProjectsToSlots(projects, tableSlots);
+                    HallLayoutUtil hallLayout = loadHallLayout();
+                    List<SlotAssignment> assignments = assignmentService.assignProjectsToSlots(projects, tableSlots, hallLayout);
                     
                     // Always create a fresh timestamped output folder
                     String jarPath = new File(System.getProperty("java.class.path")).getAbsoluteFile().getParent();
@@ -441,20 +548,22 @@ public class ScienceFairAssignmentGui extends JFrame {
                     try {
                         String groupingText = prefs.get(PREF_ROW_GROUPS, "").trim();
                         if (!groupingText.isEmpty()) {
-                            GroupingLayout layout = buildGroupingLayout(groupingText, assignments);
+                            GroupingLayout layout = buildGroupingLayout(groupingText, assignments, hallLayout);
                             if (layout != null && layout.orderedRows != null && !layout.orderedRows.isEmpty()) {
-                                com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(assignments, htmlFile, layout.orderedRows, false, layout.marginMap);
+                                com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(
+                                        assignments, htmlFile, layout.orderedRows, false, null, hallLayout, layout.groupIndexByRow);
                             } else {
-                                // Fallback if parsing produced nothing
-                                // fallback to default style (no custom margins, enable pair spacing)
-                                com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(assignments, htmlFile, null, true, null);
+                                com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(
+                                        assignments, htmlFile, null, true, null, hallLayout);
                             }
                         } else {
-                            com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(assignments, htmlFile, null, true, null);
+                            com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(
+                                    assignments, htmlFile, null, true, null, hallLayout);
                         }
                     } catch (Exception gx) {
                         publish("Warning: Failed to apply custom grouping. Using default layout. Reason: " + gx.getMessage());
-                        com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(assignments, htmlFile, null, true, null);
+                        com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(
+                                assignments, htmlFile, null, true, null, hallLayout);
                     }
                     publish("HTML results saved to: " + htmlFile);
                     publish("\n" + assignmentService.generateAssignmentSummary(assignments, projects, tableSlots));
@@ -542,23 +651,19 @@ public class ScienceFairAssignmentGui extends JFrame {
             assignments = java.util.Collections.emptyList();
         }
         // Grouping-only UI (row list & pair spacing removed)
-        JLabel groupingLabel = new JLabel("Row Groups (e.g. [1,2] [3,4] [5,6,7]):");
+        JLabel groupingLabel = new JLabel("Row Groups (optional, e.g. [1,2] [3,4] [5,6,7]):");
         JTextArea groupingArea = new JTextArea(4, 40);
         groupingArea.setLineWrap(true);
         groupingArea.setWrapStyleWord(true);
-        String savedGroups = prefs.get(PREF_ROW_GROUPS, "").trim();
-        if (!savedGroups.isEmpty()) {
-            groupingArea.setText(savedGroups);
-        } else {
-            groupingArea.setText("[1,2] [3,4] [5,6,7]");
-        }
+        groupingArea.setText(prefs.get(PREF_ROW_GROUPS, "").trim());
         JScrollPane groupingScroll = new JScrollPane(groupingArea);
-        JLabel infoLabel = new JLabel("Order & spacing derived from groups. Small gap within a group, large gap between groups.");
+
+        JLabel infoLabel = new JLabel("Leave empty for no grouping. Only listed rows are grouped; others use normal spacing.");
         infoLabel.setFont(infoLabel.getFont().deriveFont(Font.ITALIC, 11f));
 
     JButton previewBtn = new JButton("Generate Preview");
     JButton saveBtn = new JButton("Save");
-    JButton resetBtn = new JButton("Reset to Default");
+    JButton resetBtn = new JButton("Clear");
     JButton closeBtn = new JButton("Close");
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
@@ -594,7 +699,8 @@ public class ScienceFairAssignmentGui extends JFrame {
     // Live validation setup
     javax.swing.event.DocumentListener groupingValidator = new javax.swing.event.DocumentListener() {
         private void reval() {
-            ValidationResult vr = validateGrouping(groupingAreaRef.getText(), assignmentsForPreview);
+            int aislePivot = resolveAislePivot();
+            ValidationResult vr = validateGrouping(groupingAreaRef.getText(), assignmentsForPreview, aislePivot);
             if (!vr.valid) {
                 previewBtn.setEnabled(false);
                 saveBtn.setEnabled(false);
@@ -622,17 +728,26 @@ public class ScienceFairAssignmentGui extends JFrame {
     previewBtn.addActionListener(new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent ev) {
-            GroupingLayout layout = buildGroupingLayout(groupingAreaRef.getText().trim(), assignmentsForPreview);
+            HallLayoutUtil hallLayout = loadHallLayout();
+            String groupingText = groupingAreaRef.getText().trim();
             if (currentOutputFolder == null) {
                 JOptionPane.showMessageDialog(dialog, "No assignment output yet. Run assignment to generate preview files.", "No Data", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             String customHtml = currentOutputFolder + File.separator + "layout_custom.html";
             try {
-                if (layout != null && layout.orderedRows != null && !layout.orderedRows.isEmpty()) {
-                    com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(assignmentsForPreview, customHtml, layout.orderedRows, false, layout.marginMap);
+                if (groupingText.isEmpty()) {
+                    com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(
+                            assignmentsForPreview, customHtml, null, true, null, hallLayout);
                 } else {
-                    com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(assignmentsForPreview, customHtml, null, true, null);
+                    GroupingLayout layout = buildGroupingLayout(groupingText, assignmentsForPreview, hallLayout);
+                    if (layout != null && layout.orderedRows != null && !layout.orderedRows.isEmpty()) {
+                        com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(
+                                assignmentsForPreview, customHtml, layout.orderedRows, false, null, hallLayout, layout.groupIndexByRow);
+                    } else {
+                        com.sciencefair.ScienceFairTableAssignmentApp.generateHtmlLayout(
+                                assignmentsForPreview, customHtml, null, true, null, hallLayout);
+                    }
                 }
                 openFile(customHtml);
             } catch (Exception ex) {
@@ -652,7 +767,7 @@ public class ScienceFairAssignmentGui extends JFrame {
         resetBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                groupingAreaRef.setText("[1][2,3][4,5][6,7][8,9]");
+                groupingAreaRef.setText("");
             }
         });
         closeBtn.addActionListener(new ActionListener() {
@@ -668,19 +783,133 @@ public class ScienceFairAssignmentGui extends JFrame {
     // Validation result helper
     private static class ValidationResult { boolean valid; String message; }
 
+    private int parseAislePivot(String text) {
+        if (text == null) {
+            return 0;
+        }
+        String trimmed = text.trim();
+        if (trimmed.isEmpty()) {
+            return 0;
+        }
+        if (!trimmed.matches("\\d+")) {
+            return -1;
+        }
+        try {
+            return Math.max(0, Integer.parseInt(trimmed));
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
+    }
+
+    private int resolveAislePivot() {
+        if (autoDetectAislePivotCheck != null && autoDetectAislePivotCheck.isSelected()) {
+            String path = tableSlotsFileField.getText().trim();
+            if (isValidTableSlotsFile(path)) {
+                return HallLayoutUtil.computeAutoPivotRow(countHallRowsFromTableSlots(path));
+            }
+            return -1;
+        }
+        return parseAislePivot(aislePivotField != null ? aislePivotField.getText() : null);
+    }
+
+    private int countHallRowsFromTableSlots(String path) {
+        try {
+            List<TableSlot> slots = ScienceFairCsvUtil.readTableSlots(path);
+            return slots.stream().mapToInt(TableSlot::getRow).max().orElse(0);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private void updateAisleDisplay(boolean autoDetect, boolean validTables, int totalRows, int aislePivot) {
+        if (aislePivotField == null || aisleInfoLabel == null) {
+            return;
+        }
+        if (autoDetect) {
+            if (validTables && aislePivot >= 0) {
+                setAislePivotFieldValue(aislePivot);
+                int leftRows = aislePivot;
+                int rightRows = totalRows - aislePivot;
+                aisleInfoLabel.setText(totalRows + " rows → pivot " + aislePivot
+                        + " (" + leftRows + " left, " + rightRows + " right)");
+                aisleInfoLabel.setForeground(new Color(0, 96, 0));
+            } else {
+                aisleInfoLabel.setText("Select a valid Table Slots file to detect row count");
+                aisleInfoLabel.setForeground(Color.GRAY);
+            }
+            aislePivotField.setEditable(false);
+            aislePivotField.setFocusable(false);
+            aislePivotField.setEnabled(true);
+            aislePivotField.setBackground(new Color(235, 235, 235));
+            aislePivotField.repaint();
+        } else {
+            aislePivotField.setEditable(true);
+            aislePivotField.setFocusable(true);
+            aislePivotField.setEnabled(true);
+            aislePivotField.setBackground(UIManager.getColor("TextField.background"));
+            aisleInfoLabel.setText("(last row on left side; 0 = disabled)");
+            aisleInfoLabel.setForeground(UIManager.getColor("Label.foreground"));
+        }
+    }
+
+    private void setAislePivotFieldValue(int pivot) {
+        if (aislePivotField == null || pivot < 0) {
+            return;
+        }
+        suppressAislePivotEvents = true;
+        try {
+            aislePivotField.setText(String.valueOf(pivot));
+        } finally {
+            suppressAislePivotEvents = false;
+        }
+        aislePivotField.repaint();
+    }
+
+    private static void restrictToDigitsOnly(JTextField field) {
+        ((AbstractDocument) field.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if (isDigitsOnly(string)) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                if (isDigitsOnly(text)) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+        });
+    }
+
+    private static boolean isDigitsOnly(String text) {
+        return text != null && (text.isEmpty() || text.matches("\\d+"));
+    }
+
     /**
      * Validates grouping text ensuring:
      *  - Only bracketed groups allowed (every number must appear inside [ ])
      *  - No trailing commas or empty entries in groups
-     *  - All existing assignment rows are accounted for exactly once
+     *  - Rows may be omitted (ungrouped); listed rows must not appear in more than one group
      */
-    private ValidationResult validateGrouping(String text, java.util.List<com.sciencefair.model.SlotAssignment> assignments) {
+    private ValidationResult validateGrouping(
+            String text,
+            java.util.List<com.sciencefair.model.SlotAssignment> assignments,
+            int aislePivot) {
         ValidationResult vr = new ValidationResult();
         vr.valid = true; vr.message = "";
+        if (aislePivot < 0) {
+            vr.valid = false;
+            vr.message = "Aisle pivot row must be a non-negative integer (0 disables).";
+            return vr;
+        }
         if (text == null) text = "";
         text = text.trim();
         if (text.isEmpty()) {
-            vr.valid = false; vr.message = "Grouping cannot be empty."; return vr;
+            return vr;
         }
         // All tokens must be bracketed; detect any digits outside brackets
         String outside = text.replaceAll("\\[(?:[^\\]]*)\\]", " ");
@@ -706,23 +935,13 @@ public class ScienceFairAssignmentGui extends JFrame {
             }
         }
         if (groupCount == 0) { vr.valid = false; vr.message = "No valid [..] groups found."; return vr; }
-        if (assignments != null && !assignments.isEmpty()) {
-            java.util.Set<Integer> allRows = new java.util.TreeSet<>();
-            for (com.sciencefair.model.SlotAssignment a : assignments) allRows.add(a.getRow());
-            if (!seen.equals(allRows)) {
-                java.util.Set<Integer> missing = new java.util.TreeSet<>(allRows); missing.removeAll(seen);
-                java.util.Set<Integer> extra = new java.util.TreeSet<>(seen); extra.removeAll(allRows);
-                if (!missing.isEmpty()) { vr.valid = false; vr.message = "Missing rows: " + missing; return vr; }
-                // Extra (unknown) rows are ignored per new requirement
-            }
-        }
         return vr;
     }
 
     /** Container for parsed grouping layout data */
     private static class GroupingLayout {
         java.util.List<Integer> orderedRows;
-        java.util.Map<Integer,Integer> marginMap;
+        java.util.Map<Integer,Integer> groupIndexByRow;
     }
 
     /**
@@ -730,10 +949,25 @@ public class ScienceFairAssignmentGui extends JFrame {
      * Builds ordered row list and per-row margin-top map.
      * Returns null if parsing yields no rows (to allow fallback behavior).
      */
-    private GroupingLayout buildGroupingLayout(String groupingText, java.util.List<com.sciencefair.model.SlotAssignment> assignments) {
+    private GroupingLayout buildGroupingLayout(
+            String groupingText,
+            java.util.List<com.sciencefair.model.SlotAssignment> assignments,
+            HallLayoutUtil hallLayout) {
         if (groupingText == null) groupingText = "";
         groupingText = groupingText.trim();
-        if (groupingText.isEmpty()) return null;
+        if (groupingText.isEmpty()) {
+            return null;
+        }
+        HallLayoutUtil layout = hallLayout != null ? hallLayout : HallLayoutUtil.disabled();
+        java.util.Set<Integer> allRows = new java.util.TreeSet<>();
+        if (assignments != null) {
+            for (com.sciencefair.model.SlotAssignment a : assignments) {
+                allRows.add(a.getRow());
+            }
+        }
+
+        java.util.List<Integer> orderedRows = layout.getTraversalRowOrder(allRows);
+
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\[(.*?)\\]").matcher(groupingText);
         java.util.List<java.util.List<Integer>> groups = new java.util.ArrayList<>();
         while (m.find()) {
@@ -746,42 +980,18 @@ public class ScienceFairAssignmentGui extends JFrame {
                 if (!g.isEmpty()) groups.add(g);
             }
         }
-        java.util.List<Integer> orderedRows = new java.util.ArrayList<>();
-        java.util.Map<Integer,Integer> marginMap = new java.util.HashMap<>();
-    // Adjusted gap sizes for clearer visual distinction between rows within a group vs between groups
-    final int smallGap = 2;   // was 4
-    final int largeGap = 48;  // was 32
-        java.util.Set<Integer> seen = new java.util.HashSet<>();
-        Integer prev = null;
-        for (java.util.List<Integer> g : groups) {
-            for (int ri=0; ri<g.size(); ri++) {
-                int row = g.get(ri);
-                if (prev == null) {
-                    marginMap.put(row, 0);
-                } else {
-                    if (ri == 0) {
-                        marginMap.put(row, largeGap);
-                    } else {
-                        marginMap.put(row, smallGap);
-                    }
-                }
-                prev = row; seen.add(row);
-                if (!orderedRows.contains(row)) orderedRows.add(row);
+
+        java.util.Map<Integer, Integer> groupIndexByRow = new java.util.HashMap<>();
+        for (int gi = 0; gi < groups.size(); gi++) {
+            for (int row : groups.get(gi)) {
+                groupIndexByRow.put(row, gi);
             }
         }
-        if (assignments != null && !assignments.isEmpty()) {
-            java.util.Set<Integer> allRows = new java.util.TreeSet<>();
-            for (com.sciencefair.model.SlotAssignment a : assignments) allRows.add(a.getRow());
-            for (Integer r : allRows) if (!seen.contains(r)) {
-                marginMap.put(r, prev==null?0:largeGap);
-                prev = r;
-                orderedRows.add(r);
-            }
-        }
-        if (orderedRows.isEmpty()) return null; // invalid grouping
+
+        if (orderedRows.isEmpty()) return null;
         GroupingLayout gl = new GroupingLayout();
         gl.orderedRows = orderedRows;
-        gl.marginMap = marginMap;
+        gl.groupIndexByRow = groupIndexByRow;
         return gl;
     }
     

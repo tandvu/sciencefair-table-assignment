@@ -3,6 +3,7 @@ package com.sciencefair.service;
 import com.sciencefair.model.ScienceProject;
 import com.sciencefair.model.SlotAssignment;
 import com.sciencefair.model.TableSlot;
+import com.sciencefair.util.HallLayoutUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,6 +24,13 @@ public class ScienceFairAssignmentService {
      * 4. Team projects on even slots are left unassigned (need odd start)
      */
     public List<SlotAssignment> assignProjectsToSlots(List<ScienceProject> projects, List<TableSlot> tableSlots) {
+        return assignProjectsToSlots(projects, tableSlots, HallLayoutUtil.disabled());
+    }
+
+    public List<SlotAssignment> assignProjectsToSlots(
+            List<ScienceProject> projects,
+            List<TableSlot> tableSlots,
+            HallLayoutUtil hallLayout) {
         List<SlotAssignment> assignments = new ArrayList<>();
         
         // A. Initialization (following specification pseudocode exactly)
@@ -30,10 +38,8 @@ public class ScienceFairAssignmentService {
         boolean lastCategoryEndedAtRowEnd = false;
         boolean categorySpacingUsed = false; // Track if we've already used the category spacing slot
         
-        // Sort table slots by row and slot ID to ensure proper order
-        List<TableSlot> sortedSlots = tableSlots.stream()
-            .sorted(Comparator.comparing(TableSlot::getRow).thenComparing(TableSlot::getTableSlotID))
-            .collect(Collectors.toList());
+        HallLayoutUtil layout = hallLayout != null ? hallLayout : HallLayoutUtil.disabled();
+        List<TableSlot> sortedSlots = layout.orderSlotsForAssignment(tableSlots);
         
         // B. Main Loop: iterate through table slots (CSV #1) and apply assignment rules
         for (int slotIndex = 0; slotIndex < sortedSlots.size(); slotIndex++) {
